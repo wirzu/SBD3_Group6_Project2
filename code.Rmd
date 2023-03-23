@@ -2,7 +2,10 @@
 title: "Groupwork_2_Group6"
 author: "Luca Wirths,Lars Wenger"
 date: "2023-05-21"
-output: html_document
+output:
+  html_document:
+    toc: yes
+    theme: united
 ---
 
 ```{r setup, include=FALSE}
