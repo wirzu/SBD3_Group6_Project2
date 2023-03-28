@@ -59,7 +59,7 @@ library(rpart.plot)
 
 ```{r, eval=FALSE}
 rm(list=ls())
-libraries = c("readr", "ggplot2","Boruta", "dlookr", "ROCR", "caret", "pROC", "dplyr", "ROSE", "corrplot", "DescTools", "ggpubr", "tidyverse", "RColorBrewer", "ggcorrplot", "PerformanceAnalytics", "corrr", "networkD3", "reshape", "knitr","naniar","UpSetR","tidyr","mice","purrr","scales","plotly","randomForest","rpart","rpart.plot")
+libraries = c("readr", "dplyr", "ggplot2","Boruta", "dlookr", "ROCR", "caret", "pROC", "dplyr", "ROSE", "corrplot", "DescTools", "ggpubr", "tidyverse", "RColorBrewer", "ggcorrplot", "PerformanceAnalytics", "corrr", "networkD3", "reshape", "knitr","naniar","UpSetR","tidyr","mice","purrr","scales","plotly","randomForest","rpart","rpart.plot")
  
 lapply(libraries, function(x) if (!(x %in% installed.packages())) {
   install.packages(x)
@@ -81,6 +81,14 @@ summary(data)
 ```
 
 In the data are 10809 observations of 78 variables. 
+
+Most of the respondents in the dataset are male (9135). Rest of it are female (1571), prefered "not to say" (72) or did "self-describe" (31). Thus the men are strongly overrepresented. However, this is probably due to the industry, where a larger proportion of men are employed. A similar overrepresentation can be seen in the country of origin. There is also a clear majority there with USA (2505) and India (1576).
+The dataset is somewhat more balanced with regard to the age of the participants. Most participants are between 25-29 years old (3008), but the remaining age groups are also well represented.
+It is also clear that about half of the participants have a master's degree (5209). However, there is also a good proportion of participants with a bachelor's degree (2990) or a doctorate (1869).
+Most participants have studied "Computer Science" (4239), "Engineering" (1704) or "Mathematics or Statistics" (1545). 
+In terms of job title, there are different designations with "Data Scientist" (2505), "Software Engineer" (1800), "Student" (1588) and "Data Analyst" (1022).
+The majority of the participants still have little professional experience. Thus, more than half of the participants have less than 3 years of experience.
+
 
 ### Data selection
 
