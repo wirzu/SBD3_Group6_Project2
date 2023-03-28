@@ -67,7 +67,20 @@ lapply(libraries, function(x) if (!(x %in% installed.packages())) {
 set.seed(8)
 ```
 
+### Import Data
+```{r}
+load("data_wage.RData")
+data_wage <- data #copy of dataset
+```
+
 ## Analyse Data LARS
+
+```{r}
+overview(data)
+summary(data)
+```
+
+In the data are 10809 observations of 78 variables. 
 
 ### Data selection
 
