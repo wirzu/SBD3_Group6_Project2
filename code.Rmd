@@ -89,8 +89,84 @@ Most participants have studied "Computer Science" (4239), "Engineering" (1704) o
 In terms of job title, there are different designations with "Data Scientist" (2505), "Software Engineer" (1800), "Student" (1588) and "Data Analyst" (1022).
 The majority of the participants still have little professional experience. Thus, more than half of the participants have less than 3 years of experience.
 
+### Handle outliers
+
+We now investigated if there are outliers by creating a boxplot for every feature. 
+
+```{r, fig.width=20, fig.height=20, echo=FALSE}
+# We could see, that from the numeric columns 11 got outliers and 1 doesn't contain any outlier. Now lets make a boxplot for the graphical visualization of these outliers.
+boxplot(scale(data[,'wage']), use.cols = TRUE,col="aquamarine3")
+```
+
+To have a better feeling and see more in detail how the feature is distributed we show here the plot_outlier, which gives us a boxplot and a histogram with and without outliers.
+
+```{r,echo=FALSE}
+#Let's visualize all columnns with and without outliers
+data %>%
+  plot_outlier(col="aquamarine3",diagnose_outlier(data['wage']) %>%
+                 filter(outliers_ratio >= 0.5) %>%          # dplyr
+                 select(variables) %>%
+                 unlist())
+
+```
+
+We see that without the outliers the standarddistribution is almost everywhere better. So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that feature.
+```{r,echo=FALSE}
+outlier <- function(x){
+  quantiles <- quantile(x, c(.05, .95))
+  x[x < quantiles[1]] <- quantiles[1]
+  x[x > quantiles[2]] <- quantiles[2]
+  x
+}   
+```
+
+In the next step, we apply the outlier function to our numeric variables in the under-sampled dataset. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
+```{r}
+
+#Use function outlier for the dataset
+data['wage'] <- map_df(data['wage'], outlier)
+```
+
+### Variable wage
+
+```{r}
+# Let's check our dependent variable "wage"
+summary(data$wage)
+ggplot(data, aes(x = wage)) + 
+  geom_histogram(color = "blue") +
+  labs(title = "Histograme of the wages")
+```
+
+### One-hot encoding
+
+```{r}
+dummy <- dummyVars(" ~ .", data = data)
+
+# Perform one-hot encoding on the data
+data_encoded <- data.frame(predict(dummy, newdata = data))
+
+
+```
+
+### clear Data
+
+```{r}
+# Delete where wage = 0
+data <- subset(data, wage != 0)
+
+switzerland_data <- data[data$country == "Switzerland",]
+
+```
 
 ### Data selection
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+data$wage <- as.factor(data$wage)
+boruta_output <- Boruta(wage~., data = data_encoded, doTrace=2)
+#boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+#print(boruta_signif)
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+```
 
 ### Featureselection 
 
@@ -244,6 +320,25 @@ And his Salary is based on our Algo YYY and on the gut-Algo ZZZ
 
 
 ### Josua
+
+```{r}
+## Use your model to predict churn on new data, here: A single observation.
+# First, enter values for all predictors 
+Test_Josua <- data.frame(Account_Length_days= 192,
+                                      Voicemail_Messages= 11,
+                                      Call_mins_day=54,
+                                      Call_mins_eve=160,
+                                      Call_mins_night=80,
+                                      CustomerService_Calls=0,
+                                      International_Calls=8,
+                                      Customer_Age=62,
+                                      Customer_Gender="male",
+                                      State="AR") 
+
+# Second, make the prediction on the basis of the data you entered
+predict(churn_model, type='response', Test_Josua)
+```
+
 
 ### Lars
 
