@@ -71,6 +71,7 @@ set.seed(8)
 ```{r}
 load("data_wage.RData")
 data_wage <- data #copy of dataset
+set.seed(8)
 ```
 
 ## Analyse Data LARS
@@ -88,16 +89,6 @@ It is also clear that about half of the participants have a master's degree (520
 Most participants have studied "Computer Science" (4239), "Engineering" (1704) or "Mathematics or Statistics" (1545). 
 In terms of job title, there are different designations with "Data Scientist" (2505), "Software Engineer" (1800), "Student" (1588) and "Data Analyst" (1022).
 The majority of the participants still have little professional experience. Thus, more than half of the participants have less than 3 years of experience.
-
-
-### clear Data
-If we check the data, we can't use the ones where the wage is missing. So we delete those 1000 entries.
-
-```{r}
-# Delete where wage = 0
-data <- subset(data, wage != 0)
-
-```
 
 
 ### Handle outliers
@@ -149,152 +140,106 @@ ggplot(data, aes(x = wage)) +
   labs(title = "Histograme of the wages")
 ```
 
-### One-hot encoding
-Think dont need, perhaps with new_data to check the features again.
-```{r}
-#dummy <- dummyVars(" ~ .", data = data)
-
-# Perform one-hot encoding on the data
-#data_encoded <- data.frame(predict(dummy, newdata = data))
-
-
-```
-
 
 ### Data selection
 
 To the most important part now:
 So help us select the right features, we use the boruta algorithm. 
-Since our Laptops are not that strong and can't use all the Data, we use another aspect. 
-We create some different boruta results. 
-One for the DACH Region (Germany, Austria, Switzerland), one for the USA and one for India and use those results then together in a full Boruta to check. 
 
 
-#### DACH
+
+#### TEST features
+Here we see the first Boruta results. 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
-DACH_data <- data[data$country == "Switzerland" | data$country == "Austria" | data$country == "Germany",] 
-DACH_data$wage <- as.factor(DACH_data$wage)
-boruta_output <- Boruta(wage~., data = DACH_data, doTrace=2)
+test_data <- data
+str(test_data)
+boruta_output <- Boruta(wage~., data = test_data, doTrace=2)
 boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
 print(boruta_signif)
 ```
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
-
-#### USA
-
-```{r, echo=FALSE,message=FALSE,warning=FALSE}
-USA_data <- data[data$country == "United States of America",] 
-USA_data$wage <- as.factor(USA_data$wage)
-boruta_output <- Boruta(wage~., data = USA_data, doTrace=2)
-boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-print(boruta_signif)
-plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
-```
-
-#### India
-```{r, echo=FALSE,message=FALSE,warning=FALSE}
-India_data <- data[data$country == "India",] 
-India_data$wage <- as.factor(India_data$wage)
-boruta_output <- Boruta(wage~., data = India_data, doTrace=2)
-boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-print(boruta_signif)
-plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
-```
-
-### Combination of features
-As we see in the different Boruta models we have sometimes the same features (like age or job_role) and some outliers(like ML_framework_caret. We now take all those significant features of all 3 different borutas and run another boruta to check those 30 features again.
-
-The 30 features are:
-- gender
-- age
-- country
-- education
-- job_role
-test
-- industry
-- years_experience
-- ML_atwork
-- Activities_Analyze.and.understand.data.to.influence.product.or.business.decisions
-- Activities_Build.and.or.run.a.machine.learning.service.that.operationally.improves.my.product.or.workflows
-- Activities_Build.and.or.run.the.data.infrastructure.that.my.business.uses.for.storing..analyzing..and.operationalizing.data
-- Activities_Build.prototypes.to.explore.applying.machine.learning.to.new.areas
-- Activities_Do.research.that.advances.the.state.of.the.art.of.machine.learning
-- Activities_None.of.these.activities.are.an.important.part.of.my.role.at.work
-- cloud_Amazon.Web.Services..AWS.
-- cloud_I.have.not.used.any.cloud.providers
-- Programming_R
-- Programming_Java
-- Programming_Scala
-- Programming_language_used_most_often
-- ML_framework_TensorFlow
-- ML_framework_PyTorch
-- ML_framework_Caret
-- ML_framework_H20
-- ML_framework_None
-- percent_actively.coding
-- How.long.have.you.been.writing.code.to.analyze.data.
-- For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school..
-- explainability.model_SHAP.functions
-- explainability.model_None.I.do.not.use.these.model.explanation.techniques
+Since it was not finished after one run, we now create a subset only with the remaining 53 features.
+The 53 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
+ [1] "age"
+ [2] "country"
+ [3] "education"
+ [4] "undergraduate_major"
+ [5] "job_role"
+ [6] "industry"
+ [7] "years_experience"
+ [8] "ML_atwork"
+ [9] "Activities_Analyze.and.understand.data.to.influence.product.or.business.decisions"
+[10] "Activities_Build.and.or.run.a.machine.learning.service.that.operationally.improves.my.product.or.workflows"
+[11] "Activities_Build.and.or.run.the.data.infrastructure.that.my.business.uses.for.storing..analyzing..and.operationalizing.data"
+[12] "Activities_Build.prototypes.to.explore.applying.machine.learning.to.new.areas"
+[13] "Activities_Do.research.that.advances.the.state.of.the.art.of.machine.learning"
+[14] "Activities_None.of.these.activities.are.an.important.part.of.my.role.at.work"
+[15] "Notebooks_Google.Colab"
+[16] "Notebooks_Google.Cloud.Datalab"
+[17] "cloud_Amazon.Web.Services..AWS."
+[18] "cloud_Alibaba.Cloud"
+[19] "cloud_I.have.not.used.any.cloud.providers"
+[20] "Programming_Python"
+[21] "Programming_R"
+[22] "Programming_SQL"
+[23] "Programming_Java"
+[24] "Programming_C.C.."
+[25] "Programming_MATLAB"
+[26] "Programming_language_used_most_often"
+[27] "ML_framework_Scikit.Learn"
+[28] "ML_framework_TensorFlow"
+[29] "ML_framework_Keras"
+[30] "ML_framework_Spark.MLlib"
+[31] "ML_framework_Caret"
+[32] "ML_framework_Xgboost"
+[33] "ML_framework_randomForest"
+[34] "ML_framework_None"
+[35] "Visualization_ggplot2"
+[36] "Visualization_Matplotlib"
+[37] "Visualization_Shiny"
+[38] "Visualization_Plotly"
+[39] "Visualization_None"
+[40] "percent_actively.coding"
+[41] "How.long.have.you.been.writing.code.to.analyze.data."
+[42] "For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school.."
+[43] "Do.you.consider.yourself.to.be.a.data.scientist."
+[44] "data_Categorical.Data"
+[45] "data_Image.Data"
+[46] "data_Numerical.Data"
+[47] "data_Tabular.Data"
+[48] "data_text.Data"
+[49] "data_Time.Series.Data"
+[50] "explainability.model_Examine.individual.model.coefficients"
+[51] "explainability.model_examine.feature.correlations"
+[52] "explainability.model_Examine.feature.importances"
+[53] "explainability.model_None.I.do.not.use.these.model.explanation.techniques"  
 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #create new dataframe
-new_data <- data[,c(1,2,3,4,6,7,8,9,10,11,12,13,14,15,23,27,29,32,37,40,42,44,46,47,50,57,58,59,76,77,78)]
-new_data <- data[,c(1,2,3,4,6,7,8,9,10,42,58,59,11,12,13,14,15,23,27,29,32,37,40,44,46,47,50,57,76,77,78)]
-new_data1 <- new_data[1:5000,]
-# run Boruta again now with all data to the selected features
-new_data1$wage <- as.factor(new_data1$wage)
-boruta_output <- Boruta(wage~., data = new_data1, doTrace=2)
-boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-print(boruta_signif)
-new_data2 <- new_data[5000:9809,]
-# run Boruta again now with all data to the selected features
-new_data2$wage <- as.factor(new_data2$wage)
-boruta_output <- Boruta(wage~., data = new_data2, doTrace=2)
-boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-print(boruta_signif)
-```
+new_data <- data[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
 
+# run Boruta again now with all data to the selected features
+boruta_output <- Boruta(wage~., data = new_data, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+
+```
 ```{r}
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 
 
 
-with this output we see, that the variable
-
-
-#### Correlation doesnt work!
-
-Since we have now the importance, we check for multicollinearity which is also a part of the feature selection process.
-
-```{r, echo=FALSE}
-correlations = cor(new_data[c(1:12)])
-corrplot(correlations) 
+with this output we see, that the variable Google Colab is not that important so we remove it. 
+```{r}
+new_data <- new_data %>% select(-Notebooks_Google.Colab)
 ```
 
-#### Insignificant correlations doesnt work
-
-Lastly, we also test for the significance of the correlation. With the cor_pmat function it allows us to visualize the correlations and explicitly marking the insignificant correlations. 
-
-```{r, echo=FALSE}
-p_value_mat <- cor_pmat(data_num)
-ggcorrplot(correlations, 
-           type = "lower", 
-           p.mat = p_value_mat,
-           ggtheme = ggplot2::theme_gray,
-           colors = c("#6D9EC1", "white", "#E46726")) 
-```
-
-
-Looking at the correlation plots we decide to let the feature XXX drop
-
-so our final Features are:
-
+With that we we have no our final features.
 
 ## ML part LUCA
 
@@ -302,16 +247,11 @@ so our final Features are:
 
 We use H20 AutoML to get the best ML-technique. It creates different machine learning algorithms, and compares them automatically.
 
-Setting up H20
-Java is a prerequisite for H2O, even if using it from the R or Python packages.
-You must have JAVA installed on your PC. 
-*For Mac: https://www.java.com/en/download/apple.jsp   
-*For Windows: https://www.java.com/download/ie_manual.jsp
-
- For further details, please check: https://docs.h2o.ai/h2o/latest-stable/h2o-docs/downloading.html
-
  Installing & initializing H20. 
 ```{r H20Cluster} 
+
+# Installing & initializing H20. In case you have past installations, you should run 
+# lines 37-44. If this is the first time installing, you can only run lines 43-44.
 if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
 if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 pkgs <- c("RCurl","jsonlite")
@@ -325,34 +265,30 @@ library(h2o)
 # Call other necessary libraries 
 library(data.table)
 library(writexl)
+library(readr)
 
-# Now we initialize the H2O cluster, load the dataset and specifiy the dependent feature.
 
+# Initialize H2O cluster
 h2o.init()
 
-# Load dataset
-df <- new_data
-df <- as.h2o(df)
-str(df)
 
 # Specify the column containing the dependent feature
 dep_var <- "wage"
 
 
-# The imported data already has the categorical variables set to factors
-# The following code allows you to convert all categorical variables in factors
-# Step 1: specify the names of columns containing categorical variables
+# Identify the categorical variables in the dataset
 cat_cols <- c()
-for (col in names(df)) {
-  if (class(df[[col]]) == "factor" | typeof(df[[col]]) == "character") {
+for (col in names(new_data)) {
+  if (class(new_data[[col]]) == "factor" | typeof(new_data[[col]]) == "character") {
     cat_cols <- c(cat_cols, col)
   }
 }
 
-# Step 2: Convert categorical variables to factors
-for (col in cat_cols) {
-  df[, col] <- as.factor(df[, col])
-}
+# Convert the categorical variables to factors
+new_data[cat_cols] <- lapply(new_data[cat_cols], factor)
+
+
+df <- as.h2o(new_data)
 
 
 # Split dataset into training and test sets
@@ -368,7 +304,7 @@ automl <- h2o.automl(
   x = setdiff(colnames(df), dep_var), # independent variables
   y = dep_var, # dependent variable
   training_frame = train,
-  max_runtime_secs = 3600, # maximum time in seconds for AutoML to run
+  max_runtime_secs = 600, # maximum time in seconds for AutoML to run
   seed = 12 # set seed for reproducibility
 )
 
@@ -385,16 +321,10 @@ write_xlsx(lb_table, "trained_ML_models.xlsx")        # The excel file will be l
 
 
 # Find the best performing model per a certain criteria and explore it.
-best_auc <- h2o.get_best_model(automl, criterion = "auc")   # Best model per the AUC indicator. 
-best_auc                                                    # Let's explore the best perfroming model 
+best_RMSE <- h2o.get_best_model(automl, criterion = "RMSE")   # Best model per the RSME indicator. 
+best_RMSE                                                    # Let's explore the best perfroming model 
 ```
-```{r}
 
-# Find the best performing models across different criteria (logloss, area under the precision-recall curve (aucpr), etc.)
-best_logloss <- h2o.get_best_model(automl, criterion = "logloss")
-best_aucpr <- h2o.get_best_model(automl, criterion = "aucpr")
-best_mean_per_class_error <- h2o.get_best_model(automl, criterion = "mean_per_class_error")
-```
 ```{r}
 
 # Get training timing info
@@ -405,39 +335,19 @@ trainingInfo
 ```{r}
 # Predictions and performance on our test sample. 
 # Obtain the predictions for our test subset
-pred_best_auc <- h2o.predict(best_auc, test)
+pred_best_RMSE <- h2o.predict(best_RMSE, test)
 ```
 ```{r}
-predictions <- as.data.table(pred_best_auc)
+predictions <- as.data.table(pred_best_RMSE)
 ```
 ```{r}
-perf_best_auc <- h2o.performance(best_auc, test)
-```
-```{r}
-# Summarize the performance. 
-# We build a function that can extract the individual performance indicators like
-# auc, loglog and aucpr for the best performing model.
-performance_single <- function(perf_object){
-  capture.output(cat("logloss", h2o.logloss(perf_object), 
-                     "auc", h2o.auc(perf_object), 
-                     "aucpr", h2o.aucpr(perf_object)))
-}
-
-# Check the results for the best performing model (by auc value)
-single_best_auc <- performance_single(perf_best_auc)
-single_best_auc
-```
-```{r}
-
-# Obtain the confusion matrix
-conf_matrix_best_auc <- h2o.confusionMatrix(perf_best_auc)
-conf_matrix_best_auc
+perf_best_RMSE <- h2o.performance(best_RMSE, test)
 ```
 ```{r}
 
 # Plot the ROC and the Precision Recall curve
-plot(perf_best_auc, type = "roc")
-plot(perf_best_auc, type = "pr")
+plot(pred_best_RMSE, type = "roc")
+plot(pred_best_RMSE, type = "pr")
 ```
 ## Comparison with gut feature selection
 
@@ -446,10 +356,85 @@ plot(perf_best_auc, type = "pr")
 ### Code it
 
 ## Explanation
+h20.explain
+
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+# ----------------------- Explainability in H20 ----------- ------------------- #
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+
+# H20 framework explained (for further details check the documentation:
+# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html)
+# H2O Explainability Interface is a convenient wrapper to a number of explainabilty 
+# methods and visualizations in H2O. The main functions:
+#  * h2o.explain() (global explanation)
+#  * h2o.explain_row() (local explanation) 
+# work for individual H2O models, as well a list of models or an H2O AutoML object. 
+
+# The h2o.explain() function generates a list of explanations – individual units 
+# of explanation such as a Partial Dependence plot or a Variable Importance plot. 
+# Most of the explanations are visual – these plots can also be created by individual 
+# utility functions outside the h2o.explain() function. The visualization engine 
+# used in the R interface is the ggplot2 package
+
+
+# When h2o.explain() is provided a list of models, the following global explanations 
+# will be generated by default:
+#  * Leaderboard (compare all models)
+#  * Confusion Matrix for Leader Model (classification only)
+#  * Residual Analysis for Leader Model (regression only)
+#  * Variable Importance of Top Base (non-Stacked) Model
+#  * Variable Importance Heatmap (compare all non-Stacked models)
+#  * Model Correlation Heatmap (compare all models)
+#  * SHAP Summary of Top Tree-based Model (TreeSHAP)
+# * Partial Dependence (PD) Multi Plots (compare all models)
+# * Individual Conditional Expectation (ICE) Plots
+
+
+# Global explanations -- we explain the innerworkings of the model as a whole.
+
+# Explain leader model & compare with all AutoML models
+exp_automl <- h2o.explain(automl, valid) 
+print(exp_automl) 
+
+
+# Explain a specific model 
+GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM", criterion = "auc")
+GLM_auc <- h2o.get_best_model(automl, algorithm = "GLM", criterion = "auc")
+DRF_auc <- h2o.get_best_model(automl, algorithm = "DRF", criterion = "auc")
+DL_auc <- h2o.get_best_model(automl, algorithm = "DeepLearning", criterion = "auc")
+XGB_auc <- h2o.get_best_model(automl, algorithm = "XGBoost", criterion = "auc")
+
+
+exp_GBM <- h2o.explain(GBM_auc, valid)  # Explain the best performing GBM model 
+print(exp_GBM)
+# Some explainations concerning the plots: 
+# The green lines or dots on the PDP show the average response versus feature value with error bars.  
+# The grey histogram shows the number of instances for each range of feature values. 
+# For the monthly income plot plot, we can see that the average leaving rate decreases
+# with the montly income, but also that the data becomes increasingly sparse for larger interest rates.
+
+
+# Local explanations -- Explain a specific unit (i.e. obtain explanations for 
+# a single person in the sample). 
+
+# In the following step, we explain the behavior of a model or group of models 
+# with respect to a single row of data. By using the h2o.explain_row() function, 
+# the outputs would be: 
+#  * SHAP Contribution Plot (for the top tree-based model in AutoML)
+#  * Individual Conditional Expectation (ICE) Plots
+
+# In the next line, we explain how the model performs for a single row (row 4 from
+# the validation set)
+row_4_GBM_auc <- h2o.explain_row(GBM_auc, valid, row_index = 4)
+row_4_GBM_auc
+
 
 ## Future Salaries
 
 ### Abishan
+h20.explain_row()
 These are Abishan's inputs:
 XXXXXXXX
 
