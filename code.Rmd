@@ -89,9 +89,20 @@ Most participants have studied "Computer Science" (4239), "Engineering" (1704) o
 In terms of job title, there are different designations with "Data Scientist" (2505), "Software Engineer" (1800), "Student" (1588) and "Data Analyst" (1022).
 The majority of the participants still have little professional experience. Thus, more than half of the participants have less than 3 years of experience.
 
+
+### clear Data
+If we check the data, we can't use the ones where the wage is missing. So we delete those 1000 entries.
+
+```{r}
+# Delete where wage = 0
+data <- subset(data, wage != 0)
+
+```
+
+
 ### Handle outliers
 
-We now investigated if there are outliers by creating a boxplot for every feature. 
+We now investigated if there are outliers. 
 
 ```{r, fig.width=20, fig.height=20, echo=FALSE}
 # We could see, that from the numeric columns 11 got outliers and 1 doesn't contain any outlier. Now lets make a boxplot for the graphical visualization of these outliers.
@@ -110,7 +121,7 @@ data %>%
 
 ```
 
-We see that without the outliers the standarddistribution is almost everywhere better. So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that feature.
+We see that without the outliers the standarddistribution is better. So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that wage feature.
 ```{r,echo=FALSE}
 outlier <- function(x){
   quantiles <- quantile(x, c(.05, .95))
@@ -120,14 +131,15 @@ outlier <- function(x){
 }   
 ```
 
-In the next step, we apply the outlier function to our numeric variables in the under-sampled dataset. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
+In the next step, we apply the outlier function. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
 ```{r}
 
 #Use function outlier for the dataset
 data['wage'] <- map_df(data['wage'], outlier)
 ```
 
-### Variable wage
+### Target feature wage
+let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
 
 ```{r}
 # Let's check our dependent variable "wage"
@@ -138,43 +150,157 @@ ggplot(data, aes(x = wage)) +
 ```
 
 ### One-hot encoding
-
+Think dont need, perhaps with new_data to check the features again.
 ```{r}
-dummy <- dummyVars(" ~ .", data = data)
+#dummy <- dummyVars(" ~ .", data = data)
 
 # Perform one-hot encoding on the data
-data_encoded <- data.frame(predict(dummy, newdata = data))
+#data_encoded <- data.frame(predict(dummy, newdata = data))
 
 
 ```
 
-### clear Data
-
-```{r}
-# Delete where wage = 0
-data <- subset(data, wage != 0)
-
-switzerland_data <- data[data$country == "Switzerland",]
-
-```
 
 ### Data selection
 
+To the most important part now:
+So help us select the right features, we use the boruta algorithm. 
+Since our Laptops are not that strong and can't use all the Data, we use another aspect. 
+We create some different boruta results. 
+One for the DACH Region (Germany, Austria, Switzerland), one for the USA and one for India and use those results then together in a full Boruta to check. 
+
+
+#### DACH
+
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
-data$wage <- as.factor(data$wage)
-boruta_output <- Boruta(wage~., data = data_encoded, doTrace=2)
-#boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-#print(boruta_signif)
+DACH_data <- data[data$country == "Switzerland" | data$country == "Austria" | data$country == "Germany",] 
+DACH_data$wage <- as.factor(DACH_data$wage)
+boruta_output <- Boruta(wage~., data = DACH_data, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+```
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 
-### Featureselection 
+#### USA
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+USA_data <- data[data$country == "United States of America",] 
+USA_data$wage <- as.factor(USA_data$wage)
+boruta_output <- Boruta(wage~., data = USA_data, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+```
+
+#### India
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+India_data <- data[data$country == "India",] 
+India_data$wage <- as.factor(India_data$wage)
+boruta_output <- Boruta(wage~., data = India_data, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+```
+
+### Combination of features
+As we see in the different Boruta models we have sometimes the same features (like age or job_role) and some outliers(like ML_framework_caret. We now take all those significant features of all 3 different borutas and run another boruta to check those 30 features again.
+
+The 30 features are:
+- gender
+- age
+- country
+- education
+- job_role
+test
+- industry
+- years_experience
+- ML_atwork
+- Activities_Analyze.and.understand.data.to.influence.product.or.business.decisions
+- Activities_Build.and.or.run.a.machine.learning.service.that.operationally.improves.my.product.or.workflows
+- Activities_Build.and.or.run.the.data.infrastructure.that.my.business.uses.for.storing..analyzing..and.operationalizing.data
+- Activities_Build.prototypes.to.explore.applying.machine.learning.to.new.areas
+- Activities_Do.research.that.advances.the.state.of.the.art.of.machine.learning
+- Activities_None.of.these.activities.are.an.important.part.of.my.role.at.work
+- cloud_Amazon.Web.Services..AWS.
+- cloud_I.have.not.used.any.cloud.providers
+- Programming_R
+- Programming_Java
+- Programming_Scala
+- Programming_language_used_most_often
+- ML_framework_TensorFlow
+- ML_framework_PyTorch
+- ML_framework_Caret
+- ML_framework_H20
+- ML_framework_None
+- percent_actively.coding
+- How.long.have.you.been.writing.code.to.analyze.data.
+- For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school..
+- explainability.model_SHAP.functions
+- explainability.model_None.I.do.not.use.these.model.explanation.techniques
+
+
+```{r, echo=FALSE,message=FALSE,warning=FALSE}
+#create new dataframe
+new_data <- data[,c(1,2,3,4,6,7,8,9,10,11,12,13,14,15,23,27,29,32,37,40,42,44,46,47,50,57,58,59,76,77,78)]
+new_data <- data[,c(1,2,3,4,6,7,8,9,10,42,58,59,11,12,13,14,15,23,27,29,32,37,40,44,46,47,50,57,76,77,78)]
+new_data1 <- new_data[1:5000,]
+# run Boruta again now with all data to the selected features
+new_data1$wage <- as.factor(new_data1$wage)
+boruta_output <- Boruta(wage~., data = new_data1, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+new_data2 <- new_data[5000:9809,]
+# run Boruta again now with all data to the selected features
+new_data2$wage <- as.factor(new_data2$wage)
+boruta_output <- Boruta(wage~., data = new_data2, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
+```
+
+```{r}
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+```
+
+
+
+with this output we see, that the variable
+
+
+#### Correlation doesnt work!
+
+Since we have now the importance, we check for multicollinearity which is also a part of the feature selection process.
+
+```{r, echo=FALSE}
+correlations = cor(new_data[c(1:12)])
+corrplot(correlations) 
+```
+
+#### Insignificant correlations doesnt work
+
+Lastly, we also test for the significance of the correlation. With the cor_pmat function it allows us to visualize the correlations and explicitly marking the insignificant correlations. 
+
+```{r, echo=FALSE}
+p_value_mat <- cor_pmat(data_num)
+ggcorrplot(correlations, 
+           type = "lower", 
+           p.mat = p_value_mat,
+           ggtheme = ggplot2::theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726")) 
+```
+
+
+Looking at the correlation plots we decide to let the feature XXX drop
+
+so our final Features are:
+
 
 ## ML part LUCA
 
 ### Find best ML
 
-We use H20 AutoML to get the best ML-technique. It makes different machine learning algorithms, and compares them automaticaly.
+We use H20 AutoML to get the best ML-technique. It creates different machine learning algorithms, and compares them automatically.
 
 Setting up H20
 Java is a prerequisite for H2O, even if using it from the R or Python packages.
@@ -205,7 +331,7 @@ library(writexl)
 h2o.init()
 
 # Load dataset
-df <- data
+df <- new_data
 df <- as.h2o(df)
 str(df)
 
@@ -229,11 +355,11 @@ for (col in cat_cols) {
 }
 
 
-# Split dataset into training and validation sets
+# Split dataset into training and test sets
 set.seed(8)
 splits <- h2o.splitFrame(df, ratios = c(0.8))
 train <- splits[[1]]
-valid <- splits[[2]]
+test <- splits[[2]]
 ```
 
 # Run AutoML
@@ -250,7 +376,8 @@ automl <- h2o.automl(
 # View leaderboard of models generated by AutoML
 lb <- automl@leaderboard
 print(lb, n = nrow(lb)) 
-
+```
+```{r}
 
 # We can also export the table and observe the result more in-depth.
 lb_table <- as.data.table(lb)
@@ -260,25 +387,33 @@ write_xlsx(lb_table, "trained_ML_models.xlsx")        # The excel file will be l
 # Find the best performing model per a certain criteria and explore it.
 best_auc <- h2o.get_best_model(automl, criterion = "auc")   # Best model per the AUC indicator. 
 best_auc                                                    # Let's explore the best perfroming model 
-
+```
+```{r}
 
 # Find the best performing models across different criteria (logloss, area under the precision-recall curve (aucpr), etc.)
 best_logloss <- h2o.get_best_model(automl, criterion = "logloss")
 best_aucpr <- h2o.get_best_model(automl, criterion = "aucpr")
 best_mean_per_class_error <- h2o.get_best_model(automl, criterion = "mean_per_class_error")
-
+```
+```{r}
 
 # Get training timing info
 trainingInfo <- automl@training_info
 trainingInfo
 
-
-# Predictions and performance on our validation sample. 
-# Obtain the predictions for our validation subset
-pred_best_auc <- h2o.predict(best_auc, valid)
+```
+```{r}
+# Predictions and performance on our test sample. 
+# Obtain the predictions for our test subset
+pred_best_auc <- h2o.predict(best_auc, test)
+```
+```{r}
 predictions <- as.data.table(pred_best_auc)
-perf_best_auc <- h2o.performance(best_auc, valid)
-
+```
+```{r}
+perf_best_auc <- h2o.performance(best_auc, test)
+```
+```{r}
 # Summarize the performance. 
 # We build a function that can extract the individual performance indicators like
 # auc, loglog and aucpr for the best performing model.
@@ -291,12 +426,14 @@ performance_single <- function(perf_object){
 # Check the results for the best performing model (by auc value)
 single_best_auc <- performance_single(perf_best_auc)
 single_best_auc
-
+```
+```{r}
 
 # Obtain the confusion matrix
 conf_matrix_best_auc <- h2o.confusionMatrix(perf_best_auc)
 conf_matrix_best_auc
-
+```
+```{r}
 
 # Plot the ROC and the Precision Recall curve
 plot(perf_best_auc, type = "roc")
@@ -313,7 +450,7 @@ plot(perf_best_auc, type = "pr")
 ## Future Salaries
 
 ### Abishan
-These are Abishans inputs:
+These are Abishan's inputs:
 XXXXXXXX
 
 And his Salary is based on our Algo YYY and on the gut-Algo ZZZ
@@ -322,7 +459,7 @@ And his Salary is based on our Algo YYY and on the gut-Algo ZZZ
 ### Josua
 
 ```{r}
-## Use your model to predict churn on new data, here: A single observation.
+
 # First, enter values for all predictors 
 Test_Josua <- data.frame(Account_Length_days= 192,
                                       Voicemail_Messages= 11,
