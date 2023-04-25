@@ -296,6 +296,7 @@ set.seed(8)
 splits <- h2o.splitFrame(df, ratios = c(0.8))
 train <- splits[[1]]
 test <- splits[[2]]
+our_data <- read.csv("Our-data.csv")
 ```
 
 # Run AutoML
@@ -395,19 +396,19 @@ h20.explain
 # Global explanations -- we explain the innerworkings of the model as a whole.
 
 # Explain leader model & compare with all AutoML models
-exp_automl <- h2o.explain(automl, valid) 
+exp_automl <- h2o.explain(automl, test) 
 print(exp_automl) 
 
 
 # Explain a specific model 
-GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM", criterion = "auc")
+GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM", criterion = "RMSE")
 GLM_auc <- h2o.get_best_model(automl, algorithm = "GLM", criterion = "auc")
 DRF_auc <- h2o.get_best_model(automl, algorithm = "DRF", criterion = "auc")
 DL_auc <- h2o.get_best_model(automl, algorithm = "DeepLearning", criterion = "auc")
 XGB_auc <- h2o.get_best_model(automl, algorithm = "XGBoost", criterion = "auc")
 
 
-exp_GBM <- h2o.explain(GBM_auc, valid)  # Explain the best performing GBM model 
+exp_GBM <- h2o.explain(GBM_auc, test)  # Explain the best performing GBM model 
 print(exp_GBM)
 # Some explainations concerning the plots: 
 # The green lines or dots on the PDP show the average response versus feature value with error bars.  
@@ -427,7 +428,7 @@ print(exp_GBM)
 
 # In the next line, we explain how the model performs for a single row (row 4 from
 # the validation set)
-row_4_GBM_auc <- h2o.explain_row(GBM_auc, valid, row_index = 4)
+row_4_GBM_auc <- h2o.explain_row(exp_GBM, test, row_index = 4)
 row_4_GBM_auc
 
 
@@ -439,26 +440,12 @@ These are Abishan's inputs:
 XXXXXXXX
 
 And his Salary is based on our Algo YYY and on the gut-Algo ZZZ
-
+Abi <- h2o.explain_row(GBM_auc, our_data, row_index = 4)
 
 ### Josua
 
 ```{r}
 
-# First, enter values for all predictors 
-Test_Josua <- data.frame(Account_Length_days= 192,
-                                      Voicemail_Messages= 11,
-                                      Call_mins_day=54,
-                                      Call_mins_eve=160,
-                                      Call_mins_night=80,
-                                      CustomerService_Calls=0,
-                                      International_Calls=8,
-                                      Customer_Age=62,
-                                      Customer_Gender="male",
-                                      State="AR") 
-
-# Second, make the prediction on the basis of the data you entered
-predict(churn_model, type='response', Test_Josua)
 ```
 
 
