@@ -94,12 +94,6 @@ The majority of the participants still have little professional experience. Thus
 ### Handle outliers
 
 We now investigated if there are outliers. 
-
-```{r, fig.width=20, fig.height=20, echo=FALSE}
-# We could see, that from the numeric columns 11 got outliers and 1 doesn't contain any outlier. Now lets make a boxplot for the graphical visualization of these outliers.
-boxplot(scale(data[,'wage']), use.cols = TRUE,col="aquamarine3")
-```
-
 To have a better feeling and see more in detail how the feature is distributed we show here the plot_outlier, which gives us a boxplot and a histogram with and without outliers.
 
 ```{r,echo=FALSE}
@@ -113,6 +107,7 @@ data %>%
 ```
 
 We see that without the outliers the standarddistribution is better. So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that wage feature.
+
 ```{r,echo=FALSE}
 outlier <- function(x){
   quantiles <- quantile(x, c(.05, .95))
@@ -123,6 +118,7 @@ outlier <- function(x){
 ```
 
 In the next step, we apply the outlier function. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
+
 ```{r}
 
 #Use function outlier for the dataset
@@ -130,20 +126,23 @@ data['wage'] <- map_df(data['wage'], outlier)
 ```
 
 ### Target feature wage
+
 let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
 
 ```{r}
 # Let's check our dependent variable "wage"
 summary(data$wage)
 ggplot(data, aes(x = wage)) + 
-  geom_histogram(color = "blue") +
-  labs(title = "Histograme of the wages")
+  geom_histogram(fill="aquamarine3", color = "black") +
+  labs(title = "Histograme of the wages") +
+  theme(legend.position="none")
 ```
 
 
 ### Data selection
 
 To the most important part now:
+For our model we want to use only the relevants features.
 So help us select the right features, we use the boruta algorithm. 
 
 
@@ -232,14 +231,13 @@ print(boruta_signif)
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 
-
-
 with this output we see, that the variable Google Colab is not that important so we remove it. 
+
 ```{r}
 new_data <- new_data %>% select(-Notebooks_Google.Colab)
 ```
 
-With that we we have no our final features.
+With that we we have no our final features. We these we can build our model.
 
 ## ML part LUCA
 
@@ -300,6 +298,7 @@ our_data <- read.csv("Our-data.csv")
 ```
 
 # Run AutoML
+
 ```{r name=automl}
 automl <- h2o.automl(
   x = setdiff(colnames(df), dep_var), # independent variables
@@ -350,9 +349,12 @@ perf_best_RMSE <- h2o.performance(best_RMSE, test)
 plot(pred_best_RMSE, type = "roc")
 plot(pred_best_RMSE, type = "pr")
 ```
+
 ## Comparison with gut feature selection
 
 ### Which Algo we use and why
+
+
 
 ### Code it
 
