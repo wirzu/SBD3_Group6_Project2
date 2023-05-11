@@ -293,8 +293,10 @@ df <- as.h2o(new_data)
 set.seed(8)
 splits <- h2o.splitFrame(df, ratios = c(0.8))
 train <- splits[[1]]
-test <- splits[[2]]
-our_data <- read.csv("Our-data.csv")
+test <- h2o.importFile("our_data.csv")
+#h2o.importFile("our_data.csv")
+#our_data <- read.csv("our_data.csv")
+
 ```
 
 # Run AutoML
@@ -317,7 +319,7 @@ print(lb, n = nrow(lb))
 
 # We can also export the table and observe the result more in-depth.
 lb_table <- as.data.table(lb)
-write_xlsx(lb_table, "trained_ML_models.xlsx")        # The excel file will be located in your set working directory. 
+#write_xlsx(lb_table, "trained_ML_models.xlsx")        # The excel file will be located in your set working directory. 
 
 
 # Find the best performing model per a certain criteria and explore it.
@@ -341,22 +343,12 @@ pred_best_RMSE <- h2o.predict(best_RMSE, test)
 predictions <- as.data.table(pred_best_RMSE)
 ```
 ```{r}
-perf_best_RMSE <- h2o.performance(best_RMSE, test)
-```
-```{r}
 
 # Plot the ROC and the Precision Recall curve
 plot(pred_best_RMSE, type = "roc")
 plot(pred_best_RMSE, type = "pr")
 ```
 
-## Comparison with gut feature selection
-
-### Which Algo we use and why
-
-
-
-### Code it
 
 ## Explanation
 h20.explain
@@ -398,20 +390,10 @@ h20.explain
 # Global explanations -- we explain the innerworkings of the model as a whole.
 
 # Explain leader model & compare with all AutoML models
-exp_automl <- h2o.explain(automl, test) 
+exp_automl <- h2o.explain(best_RMSE, test) 
 print(exp_automl) 
 
 
-# Explain a specific model 
-GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM", criterion = "RMSE")
-GLM_auc <- h2o.get_best_model(automl, algorithm = "GLM", criterion = "auc")
-DRF_auc <- h2o.get_best_model(automl, algorithm = "DRF", criterion = "auc")
-DL_auc <- h2o.get_best_model(automl, algorithm = "DeepLearning", criterion = "auc")
-XGB_auc <- h2o.get_best_model(automl, algorithm = "XGBoost", criterion = "auc")
-
-
-exp_GBM <- h2o.explain(GBM_auc, test)  # Explain the best performing GBM model 
-print(exp_GBM)
 # Some explainations concerning the plots: 
 # The green lines or dots on the PDP show the average response versus feature value with error bars.  
 # The grey histogram shows the number of instances for each range of feature values. 
@@ -441,19 +423,26 @@ h20.explain_row()
 These are Abishan's inputs:
 XXXXXXXX
 
-And his Salary is based on our Algo YYY and on the gut-Algo ZZZ
-Abi <- h2o.explain_row(GBM_auc, our_data, row_index = 4)
+
+Abi <- h2o.explain_row(GBM_auc, our_data, row_index = 1)
 
 ### Josua
 
 ```{r}
-
+Josua <- h2o.explain_row(GBM_auc, our_data, row_index = 2)
 ```
 
 
 ### Lars
+```{r}
+Lars <- h2o.explain_row(GBM_auc, our_data, row_index = 3)
+```
+
 
 ### Luca
+```{r}
+Luca <- h2o.explain_row(GBM_auc, our_data, row_index = 4)
+```
 
 
 
