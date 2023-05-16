@@ -1,6 +1,6 @@
 ---
 title: "Groupwork_2_Group6"
-author: "Luca Wirths,Lars Wenger"
+author: "Luca Wirths, Lars Wenger, Josua Reich, Abishan Arumugavel "
 date: "2023-05-21"
 output:
   html_document:
