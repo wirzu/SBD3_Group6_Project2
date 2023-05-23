@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Preparations
 
+
 ### Import Modules
 ```{r, include=FALSE}
 #install.packages("readr")
@@ -24,48 +25,31 @@ knitr::opts_chunk$set(echo = TRUE)
 #install.packages("naniar")
 #install.packages("UpSetR")
 #install.packages("ggplot2")
-#install.packages("corrplot")
 #install.packages("tidyr")
 #install.packages("mice")
 #install.packages("purrr")
 #install.packages("scales")
-#install pachages("ggcorrplot")
 
 library(readr)
 library(dplyr)
 library(dlookr)
 library(naniar)
-library(UpSetR)
+#library(UpSetR)
 library(ggplot2)
-library(corrplot)
 library(tidyr)
-library(mice)
+#library(mice)
 library(purrr)
-library(scales)
-library(ggcorrplot)
-library(ROSE)
+#library(scales)
 library(Boruta)
 library(DescTools)
-library(caret)
-library(ROCR)
-library(pROC)
-library(plotly)
-library(randomForest)
-library(rpart)
-library(rpart.plot)
-
+#library(caret)
+# Call other necessary libraries 
+library(data.table)
+#library(writexl)
+library(h2o)
 
 ```
 
-```{r, eval=FALSE}
-rm(list=ls())
-libraries = c("readr", "dplyr", "ggplot2","Boruta", "dlookr", "ROCR", "caret", "pROC", "dplyr", "ROSE", "corrplot", "DescTools", "ggpubr", "tidyverse", "RColorBrewer", "ggcorrplot", "PerformanceAnalytics", "corrr", "networkD3", "reshape", "knitr","naniar","UpSetR","tidyr","mice","purrr","scales","plotly","randomForest","rpart","rpart.plot")
- 
-lapply(libraries, function(x) if (!(x %in% installed.packages())) {
-  install.packages(x)
-})
-set.seed(8)
-```
 
 ### Import Data
 ```{r}
@@ -91,9 +75,9 @@ In terms of job title, there are different designations with "Data Scientist" (2
 The majority of the participants still have little professional experience. Thus, more than half of the participants have less than 3 years of experience.
 
 
-### Handle outliers
+### Check data
 
-We now investigated if there are outliers. 
+We now investigated the data on plausability. 
 To have a better feeling and see more in detail how the feature is distributed we show here the plot_outlier, which gives us a boxplot and a histogram with and without outliers.
 
 ```{r,echo=FALSE}
@@ -111,21 +95,24 @@ We see the problem in the surveys that both the job description and the industry
 That's why we check how plausible the information in the survey can be. On the one hand, we look at how many people who are not students have stated that they do not earn anything. We also look at how many students stated that they earn more than 150,000. Both are combinations that we do not consider plausible. We see that there are such entries and therefore assume that the outliers are partly due to incorrect entries.
 
 
-```{r}
-# Check how many non-students have wage = 0
+```{r, echo=FALSE}
+# Check how many non-students have wage = 0 
 num_rows_1 <- nrow(data[data$wage == 0 & data$job_role != "Student" | data$wage == 0 & data$industry != "I am a student", ])
-print(paste("Number of Non student's, with wage 0:", num_rows_1))
+print(paste("Number of **Non** student's, with wage 0:", num_rows_1))
 
-# Check how many students have wage > 170'000
+# Check how many students have wage > 150'000
 num_rows_2 <- nrow(data[data$wage > 150000 & data$job_role == "Student" | data$wage > 150000 & data$industry != "I am a student", ])
 print(paste("Number of student's, with wage more than 150,000:", num_rows_2))
 ```
 
-So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that wage feature.
+We see those two possibilities to now ether delete those entries or we use an outlierhandling and give them a wage.
+
+Since we have already looked at the outlierdistribution above, we think it is better to use the outlierhandling.
+So we create now the standard function to replace the outliers with the 10th and 90th percentile value of that wage feature. The default values for the outlierhandling would be 5/95% but, we have a little below 10% of data with "0$" as wage, so we had to change it to 10/90% values.
 
 ```{r,echo=FALSE}
 outlier <- function(x){
-  quantiles <- quantile(x, c(.05, .95))
+  quantiles <- quantile(x, c(.1, .9))
   x[x < quantiles[1]] <- quantiles[1]
   x[x > quantiles[2]] <- quantiles[2]
   x
@@ -140,18 +127,35 @@ In the next step, we apply the outlier function. For this, we use the map_df fun
 data['wage'] <- map_df(data['wage'], outlier)
 ```
 
+With this outlierhandling, the students now make around 3200 $ / year. Which we think is a plausible value.
+
+
+
 ### Target feature wage
 
-let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
+Let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
 
 ```{r}
 # Let's check our dependent variable "wage"
 summary(data$wage)
 ggplot(data, aes(x = wage)) + 
   geom_histogram(fill="aquamarine3", color = "black") +
-  labs(title = "Histograme of the wages") +
+  labs(title = "Histogram of the wages") +
   theme(legend.position="none")
 ```
+
+```{r}
+
+data_remove <- data[!(data$wage == 0 & data$job_role != "Student" | data$wage == 0 & data$industry != "I am a student"), ]
+
+
+
+
+
+```
+
+
+
 
 
 ### Data selection
@@ -254,7 +258,7 @@ new_data <- new_data %>% select(-Notebooks_Google.Colab)
 
 With that we we have no our final features. We these we can build our model.
 
-## ML part LUCA
+## ML part
 
 ### Find best ML
 
@@ -265,20 +269,18 @@ We use H20 AutoML to get the best ML-technique. It creates different machine lea
 
 # Installing & initializing H20. In case you have past installations, you should run 
 # lines 37-44. If this is the first time installing, you can only run lines 43-44.
-if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
-if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
+#if ("package:h2o" %in% search()) { detach("package:h2o", unload=TRUE) }
+#if ("h2o" %in% rownames(installed.packages())) { remove.packages("h2o") }
 pkgs <- c("RCurl","jsonlite")
 for (pkg in pkgs) {
   if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }
 }
-install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
+#install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
+
 library(h2o)
 
 
-# Call other necessary libraries 
-library(data.table)
-library(writexl)
-library(readr)
+
 
 
 # Initialize H2O cluster
@@ -330,26 +332,21 @@ automl <- h2o.automl(
 lb <- automl@leaderboard
 print(lb, n = nrow(lb)) 
 ```
+
+We see that the best model which is not a Stacked Ensemble is a GBM model. The Gradient Boosting Machine (GBM) is a machine learning model that combines multiple weak prediction models, typically decision trees, to create a strong predictive model. It does this by iteratively fitting new models to the residuals of the previous models, effectively focusing on the mistakes made by the previous models and minimizing them in subsequent iterations. The final prediction is obtained by aggregating the predictions of all the models, with each model assigned a weight based on its performance.
+
 ```{r}
-
-# We can also export the table and observe the result more in-depth.
-lb_table <- as.data.table(lb)
-#write_xlsx(lb_table, "trained_ML_models.xlsx")        # The excel file will be located in your set working directory. 
-
-
-# Find the best performing model per a certain criteria and explore it.
+# Find the best performing model per RMSE criteria and explore it.
 best_RMSE <- h2o.get_best_model(automl, criterion = "RMSE", algorithm = "GBM")   # Best model per the RSME indicator. 
-
-leaderboard <- h2o.get_leaderboard(automl, extra_columns = "ALL")
-second_best_model <- h2o.getModel("StackedEnsemble_AllModels_3_AutoML_2_20230511_141540")
-
-
 best_RMSE                                                    # Let's explore the best perfroming model 
 ```
 
+
+Interesting is the RMSE, which is still 27'186 dollar which means, that every output has a deviation of +/- 27'186$ which is not that great for predicting wage. 
+
 ```{r}
 
-# Get training timing info
+# Get training timing info LARS DO WE NEED THAT? I dont think so
 trainingInfo <- automl@training_info
 trainingInfo
 
@@ -358,66 +355,21 @@ trainingInfo
 # Predictions and performance on our test sample. 
 # Obtain the predictions for our test subset
 pred_best_RMSE <- h2o.predict(best_RMSE, test)
-pred <- h2o.predict(second_best_model, test)
 ```
 ```{r}
 predictions <- as.data.table(pred_best_RMSE)
 predictions
-
-predictions2 <- as.data.table(pred)
-predictions2
 ```
+
+
 ```{r}
 
-# Plot the ROC and the Precision Recall curve
-plot(pred_best_RMSE, type = "roc")
-plot(pred_best_RMSE, type = "pr")
-```
-
-
 ## Explanation
-h20.explain
-
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-# ----------------------- Explainability in H20 ----------- ------------------- #
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-
-# H20 framework explained (for further details check the documentation:
-# https://docs.h2o.ai/h2o/latest-stable/h2o-docs/explain.html)
-# H2O Explainability Interface is a convenient wrapper to a number of explainabilty 
-# methods and visualizations in H2O. The main functions:
-#  * h2o.explain() (global explanation)
-#  * h2o.explain_row() (local explanation) 
-# work for individual H2O models, as well a list of models or an H2O AutoML object. 
-
-# The h2o.explain() function generates a list of explanations – individual units 
-# of explanation such as a Partial Dependence plot or a Variable Importance plot. 
-# Most of the explanations are visual – these plots can also be created by individual 
-# utility functions outside the h2o.explain() function. The visualization engine 
-# used in the R interface is the ggplot2 package
-
-
-# When h2o.explain() is provided a list of models, the following global explanations 
-# will be generated by default:
-#  * Leaderboard (compare all models)
-#  * Confusion Matrix for Leader Model (classification only)
-#  * Residual Analysis for Leader Model (regression only)
-#  * Variable Importance of Top Base (non-Stacked) Model
-#  * Variable Importance Heatmap (compare all non-Stacked models)
-#  * Model Correlation Heatmap (compare all models)
-#  * SHAP Summary of Top Tree-based Model (TreeSHAP)
-# * Partial Dependence (PD) Multi Plots (compare all models)
-# * Individual Conditional Expectation (ICE) Plots
-
-
-# Global explanations -- we explain the innerworkings of the model as a whole.
+# Global explanations -- explains the hole model
 
 # Explain leader model & compare with all AutoML models
 exp_automl <- h2o.explain(best_RMSE, test) 
 print(exp_automl) 
-
 
 # Some explainations concerning the plots: 
 # The green lines or dots on the PDP show the average response versus feature value with error bars.  
@@ -435,41 +387,33 @@ print(exp_automl)
 #  * SHAP Contribution Plot (for the top tree-based model in AutoML)
 #  * Individual Conditional Expectation (ICE) Plots
 
-# In the next line, we explain how the model performs for a single row (row 4 from
-# the validation set)
-row_4_GBM_auc <- h2o.explain_row(best_RMSE, test, row_index = 4)
-row_4_GBM_auc
-
+```
 
 ## Future Salaries
 
 ### Abishan
-h20.explain_row()
-These are Abishan's inputs:
-XXXXXXXX
 
 ```{r}
+#LARS für was ist das hier? braucht es aus meiner sicht nicht.
 GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM")
 ```
 
 
 ### Abishan
 ```{r}
-Abishan <- h2o.explain_row(GBM_auc, test, row_index = 1)
-Abishan
+Abishan <- h2o.explain_row(best_RMSE, test, row_index = 1)
+Abishan[1]
 ```
 Wage is influenced by various factors. For a high wage, being in Switzerland, working in the "Other" industry, using SQL, and having a business discipline undergraduate major are important. For a low wage, being a student, uncertain ML involvement, 0-1 years of experience, and an age of 22-24 are significant.
 These factors are not surprising and are therefore plausible.
 
 
 
-Abi <- h2o.explain_row(GBM_auc, our_data, row_index = 1)
-
 ### Josua
 
 ```{r}
-Josua <- h2o.explain_row(GBM_auc, test, row_index = 2)
-Josua
+Josua <- h2o.explain_row(best_RMSE, test, row_index = 2)
+Josua[1]
 ```
 
 According to our model, important parameters for a high wage include being in Switzerland, working in the "Other" industry, using SQL programming language, and having a business discipline undergraduate major. For a low wage, being a student, not working with machine learning, having 0-1 years of experience, and writing code for 1-2 years are significant factors. 
@@ -478,8 +422,8 @@ These factors are not surprising and are therefore plausible.
 ### Lars
 
 ```{r}
-Lars <- h2o.explain_row(GBM_auc, test, row_index = 3)
-Lars
+Lars <- h2o.explain_row(best_RMSE, test, row_index = 3)
+Lars[1]
 ```
 
 For a higher wage, being in Switzerland, working in the "Other" industry, and having a business discipline undergraduate major are important. For a lower wage, being a student, not working with machine learning, having 0-1 years of experience, and falling within the age range of 25-29 are significant factors. These findings are based on the ML model, and other factors can also impact wages.
@@ -487,567 +431,17 @@ For a higher wage, being in Switzerland, working in the "Other" industry, and ha
 ### Luca
 
 ```{r}
-Luca <- h2o.explain_row(GBM_auc, test, row_index = 4)
-Luca
+Luca <- h2o.explain_row(best_RMSE, test, row_index = 4)
+Luca[1]
 ```
-
 
 Wage is influenced by various factors. For a higher wage, being in Switzerland, working in the "Other" job role, and having well-established involvement in machine learning at work are important. For a lower wage, being in the age range of 25-29, having 3-4 years of experience, and not being engaged in activities for building prototypes are significant. These findings are based on the ML model, and other factors can also impact wages.
 
 ## Conclusion
 
-Across all 4 trials there are clear indications of what is relevant to wage. Clearly, country is a very strong factor. Also, a very important factor is whether you are a student or not. We also see the biggest difference in our statements, since Luca was the only one who did not state that he is in industry = I am a student. So he earns 3 times as much as the rest of us. Age is also a relevant factor. With our information (everyone under 30 years of age), this has a negative impact on wages. The not clearly assigned job role (Other) is the only strong factor that is not clearly comprehensible. We are therefore fundamentally very satisfied with our model, as the factors are very plausible and understandable. We are happy as soon as we can settle our student and immediately earn 3 times more than before ;)
+Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did not mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning three times more than before ;) 
 
-
-
-
-
-
-
-
-###### Old work, some things can be used. 
-
-
-
-### Import Data
-```{r}
-data_loans <- read_csv("loan_sample_8.csv")
-data <- data_loans # We always make a copy from the original dataset and work on the copy
-data <- data[,c(1,2,5,8,9,10,11,12,13,15,16,17,3,4,6,7,14)] # order numerical then categorical
-```
-
-
-## Exercise 1
-### Structure and dimensions of the data set
-#### What are the dimensions of the data set?
-
-```{r}
-dim(data)
-
-```
-
-The result of the function dim() of our data set show that we have a sample of 40'000 rows and 17 columns.
-
-#### How many numeric and how many categorical variables are included in the data?
-
-```{r}
-overview(data) 
-
-```
-
-With the function overview() we see that there are 12 numerical and 5 categorical features. 
-
-#### Summarize the variables. Discuss the summary statistics obtained.
-```{r}
-summary(data)
-```
-
-We don't see any specially high or low numbers in our data set.
-
-The loan amount of 40'000 is high but not an error, because the average loan amount is 11'687 and the mean 10'075 which indicates a low number of outlines.
-
-The maximum in the feature int_rate of the interest with 27.49 is in our eyes possible, but we would not take that loan ourselves. Since the mean and median are close, it is acceptable.
-
-An annual income of 400'000 is high, but no error, since a Federal Council in Switzerland makes CHF 456'854(01.01.22). Also here, the mean and median ar quite close. The annual income of 5'000 may be an error, but can be someone only working for 1 month or parttime.
-
-The maximum dti of 60.14 is high, but on a closer look, we see that the majority did not default, so it makes it a valuable data set.
-
-The open_acc is fine, with a max of 23 months left on the loan.
-
-We assume that in revolving credit balance, a customer can take multiple loans. Because only in this way it makes sense that there are, for example, values where the customer takes a loan of 1400 and has a value of 78000 revolving credit balance.
-
-The median and mean of revolving line utilization line is special. The Median is bigger than the mean, which means, that it is a left skewed distribution.
-
-For the total_acc, in our opinion, this data set makes sense. The range between 3 and 57 is possible.
-
-If the loan_amnt is bigger, then the customer also have to pay more interest. So in the column total_rec_int you see, how much they have paid until today. The min of 0 is possible, if the customer has not paid anything until today.
-
-The tot_cur_bal of 472573 max is possible. But the mean and the median are not so close together. And the current total balance of 0 is special, but it could be possible, if for example it is at the end of the month and the payroll is tomorrow.
-
-The total_rev_hi_lim min and max is possible. The Mean and Median are close together.
-
-
-
-#### Check the levels of the target variable by choosing the appropriate visualization. Is the target variable balanced?
-
-In the next step, we investigate our target variable. We notice that in our sample, we have 34,810 persons which did not default on their loan and we have 5,190 which did default. 
-
-```{r}
-PercTable(data$Status)
-```
-
-We can also visualize the count by plotting a bar plot.
-```{r, echo=FALSE}
-ggplot(data, aes(x = Status, fill = Status)) +
-  geom_bar(fill = "aquamarine3",
-                 color = "grey") +
-  ylab("Count") +
-  xlab("Status")
-```
-
-The plot indicates that the data set is highly imbalanced. 
-The function we use to perform an under sampling is ovun.sample().
-```{r, echo=FALSE}
-set.seed(8)             # We set the seed so we have reproducable results
-data_balanced <- ovun.sample(Status ~ ., data=data, method = "under")
-data_under <- data.frame(data_balanced[["data"]])
-```
-
-### Investigate whether certain variables contain outliers (hint: what does a box plot show?). Elaborate your view on how to proceed in dealing with the outliers and – if necessary –take appropriate action.
-
-We now investigated if there are outliers by creating a boxplot for every feature. 
-
-```{r, fig.width=20, fig.height=20, echo=FALSE}
-# Check each column if it contains outliers
-diagnose_numeric(data_under,1:11)
-
-#Make a dataset where only numeric columns are included
-data_new <- data_under[complete.cases(data_under),]
-data_num <- data_new %>%
-  select_if(is.numeric)
-
-# We could see, that from the numeric columns 11 got outliers and 1 doesn't contain any outlier. Now lets make a boxplot for the graphical visualization of these outliers.
-boxplot(scale(data_num[,1:11]), use.cols = TRUE,col="aquamarine3")
-```
-
-To have a better feeling and see more in detail how the feature is distributed we show here the plot_outlier, which gives us a boxplot and a histogram with and without outliers.
-
-```{r,echo=FALSE}
-#Let's visualize all columnns with and without outliers
-data_num %>%
-  plot_outlier(col="aquamarine3",diagnose_outlier(data_num) %>%
-                 filter(outliers_ratio >= 0.5) %>%          # dplyr
-                 select(variables) %>%
-                 unlist())
-
-```
-
-We see that without the outliers the standarddistribution is almost everywhere better. So we create now the standard function to replace the outliers with the 5th and 95th percentile value of that feature.
-```{r,echo=FALSE}
-outlier <- function(x){
-  quantiles <- quantile(x, c(.05, .95))
-  x[x < quantiles[1]] <- quantiles[1]
-  x[x > quantiles[2]] <- quantiles[2]
-  x
-}   
-```
-
-In the next step, we apply the outlier function to our numeric variables in the under-sampled dataset. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
-```{r}
-
-#Use function outlier for the dataset
-data_new_under <- map_df(data_under[,-c(12:17)], outlier)
-cols <- data_under[,c(12:17)]
-data_new_under <- cbind(data_new_under, cols)
-
-```
-
-After the changes the boxplots look like this:
-```{r, fig.width=20, fig.height=20, echo=FALSE}
-
-#Let's see what changed in the visualization of the boxplot after the capping of the outliers
-boxplot(scale(data_new_under[,c(1:11)]), use.cols = TRUE,col="aquamarine3")
-
-```
-
-
-
-### Choose the appropriate visualization to investigate the distribution of the numericfeatures per the two levels of our target feature (i.e. default vs non-default).
-
-Attention, the Code below give in R Studio the right visualization, but when knittet, not. We tested multiple hours, but did not find a solution.
-
-```{r, echo=FALSE}
-for (i in 1:length(data[,-c(12:17)])) {
-  print(ggplot(data_new_under, aes(y = data_new_under[,i], x = Status)) + 
-          geom_boxplot(fill = "aquamarine3",
-                 color = "black") + 
-          ylab(names(data_new_under[i]))) 
-}
-```
-
-
-
-### Use a bar plot visualization to investigate the associations between the categoricalvariables and the target feature.
-
-#### Association between Status and grade
-
-```{r, echo=FALSE}
-
-ggplot(data_new_under, aes(x = Status, fill = grade)) +
-  geom_bar(position="stack") +
-  ylab("Count") +
-  xlab("Status")
-```
-
-#### Association between Status and home_ownership
-```{r, echo=FALSE}
-ggplot(data_new_under, aes(x = Status, fill = home_ownership)) +
-  geom_bar(position="stack") +
-  ylab("Count") +
-  xlab("Status")
-```
-
-#### Association between Status and verification_status
-```{r, echo=FALSE}
-ggplot(data_new_under, aes(x = Status, fill = verification_status)) +
-  geom_bar(position="stack") +
-  ylab("Count") +
-  xlab("Status")
-```
-
-#### Association between Status and purpose
-```{r, echo=FALSE}
-ggplot(data_new_under, aes(x = Status, fill = purpose)) +
-  geom_bar(position="stack") +
-  ylab("Count") +
-  xlab("Status")
-```
-
-#### Association between Status and application_type
-```{r, echo=FALSE}
-ggplot(data_new_under, aes(x = Status, fill = application_type)) +
-  geom_bar(position="stack") +
-  ylab("Count") +
-  xlab("Status")
-
-```
-
-
-### Visualize the correlations that emerge between the numerical features.
-
-#### Boruta Algo
-
-Before we look at the correlations we let the Boruta algorithm give us the importance of every feature. 
-
-```{r, echo=FALSE,message=FALSE,warning=FALSE}
-# data_new_under$Status <- as.factor(data_new_under$Status)
-# boruta_output <- Boruta(Status~., data = data_new_under, doTrace=2)
-# #boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-# #print(boruta_signif)
-# plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
-```
-
-#### Correlation
-
-Since we have now the importance, we check for multicollinearity which is also a part of the feature selection process.
-
-```{r, echo=FALSE}
-correlations = cor(data_new_under[-c(12:17)])
-corrplot(correlations) 
-```
-
-#### Insignificant correlations
-
-Lastly, we also test for the significance of the correlation. With the cor_pmat function it allows us to visualize the correlations and explicitly marking the insignificant correlations. 
-
-```{r, echo=FALSE}
-p_value_mat <- cor_pmat(data_new_under[,-c(12:17)])
-ggcorrplot(correlations, 
-           type = "lower", 
-           p.mat = p_value_mat,
-           ggtheme = ggplot2::theme_gray,
-           colors = c("#6D9EC1", "white", "#E46726")) 
-```
-
-
-Looking at the correlation plots and the output from the Boruta algorithm, we decide to keep all features. 
-
-### Plot an interactive scatter plot of the association between the loan amount requested and the annual income of the borrower.
-
-```{r,echo=FALSE}
-visualisation <- ggplot(data, 
-               aes(x = loan_amnt, 
-                   y = annual_inc)) + 
-  geom_point(colour = "black", alpha = 1/2, shape = 21, fill = "red", size = 2.5)
-
-# Let's make it interactive
-ggplotly(visualisation)
-```
-
-### Create a new balanced data set where the two levels of the target variable will be equally represented; Create a bar plot of the newly created target variable.
-
-
-Lets visualize our changed data set.
-
-```{r,echo=FALSE}
-ggplot(data_new_under, aes(x = Status, fill = Status)) +
-  geom_bar() +
-  ylab("Count") +
-  xlab("Status")
-```
-
-
-## Exercise 2
-
-### Divide the sample into training and testing set using 80% for training the algorithm.
-```{r}
-
-set.seed(8)
-data_new_under$Status = as.factor(data_new_under$Status)
-div <- createDataPartition(y = data_new_under$Status, p = 0.8, list = F)
-data.train <- data_new_under[div,] # 80% here
-PercTable(data.train$Status)
-
-data.test <- data_new_under[-div,] # rest of the 20% data goes here
-PercTable(data.test$Status)
-
-```
-### Train the classifier and report the coefficients obtained and interpret the results.
-In the next step, we train the logit model. In terms of our inputs i.e. our Xs, we use all variables included in the data_new_under apart from the status, which is our Y.  
-
-```{r, echo=FALSE}
-
-fit1 <- glm(Status ~ ., data=data.train,family=binomial())
-summary(fit1)
-
-
-```
-
-We print out only the significant variables with p-value lower than 0.05. 
-```{r, echo=FALSE}
-significant.variables <- summary(fit1)$coeff[-1,4] < 0.05
-names(significant.variables)[significant.variables == TRUE]
-
-```
-
-We notice that 14 variables are found statistically significant. 
-The listed features are the most important to see if someone is creditworthy.
-"loan_amnt", "annual_inc", "int_rate" and "dti": It is obvious that these variables are most important for financial companies.
-
-"open_acc","total_acc","total_rec_int" and "total_rev_hi_lim": Have to do with your overall financial situation and what the company will give us.
-
-"verification_status" has to be ether Verified or Source verified to be significant.
-
-Because there are not all grades, we check them separately:
-
-```{r, echo=FALSE}
-visualisation2 <- ggplot(data.train, aes(x = Status, fill = grade)) +
-  geom_bar(position="stack") +
-  ggtitle("Association between Status and grade")+
-  ylab("Count") +
-  xlab("Status")
-
-# Let's make it interactive
-ggplotly(visualisation2)
-
-```
-
-We see that the amount of people with a grade A who defaulted, is compared to the other grades very low. So "gradeB","gradeC" and "gradeD" are important since the default rate is much higher. 
-
-We were surprised, that the verification_status is not on the list, since we thought many people would cheat there.
-
-
-### Plot the ROC and the Precision/Recall Curve and interpret the results
-Next, we want to test the predictive performance of our model. For this purpose, we plot the ROC curve. 
-```{r, echo=FALSE}
-
-
-# ROC Curve
-data.test$Status_score_lg <- predict(fit1, type='response', data.test)
-Status_pred <- prediction(data.test$Status_score_lg, data.test$Status)
-Status_roc <- performance(Status_pred, "tpr", "fpr")
-plot(Status_roc, lwd=1, colorize = TRUE, main = "Status_model: ROC Curve for logistic classifier")
-lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
-
-
-```
-
-The shown ROC curve indicates, that the True Positive is best between 0.4 and 0.6 because it is the steepest there. 0.5 looks like the best Value to start because the False positive rate goes up there. 
-To be sure we take one oft the best values we tried with the following numbers and results:
-TPR 0.4 -> Accuracy of 0.6163
-TPR 0.5 -> Accuracy of 0.6408
-TPR 0.6 -> Accuracy of 0.6206
-With that we take 0.5 since it has the highest Accuracy and also logical it makes the most sense, since the bank takes a 50/50 chance on customers.
-
-
-In the next step, we visualize the Precision/Recall Curve. This curve summarizes the trade-off between the true positive rate and the positive predictive value for a predictive model using different probability thresholds.
-```{r,echo=FALSE}
-# Precision/recall curve
-fit1_precision <- performance(Status_pred, measure = "prec", x.measure = "rec")
-plot(fit1_precision, main="Fit1: Logit - Precision vs Recall")
-
-```
-
-The Curve shows the trade off between the precision of the results and the recall true results. How many it predicts correct. With the tested TPR of 0.5 we see here the Precision result, which is around 0.7. This is a stable value. 
-
-
-
-### Produce the confusion matrix and interpret the results.
-
-```{r,echo=FALSE}
-## Confusion matrix
-# Predict default if probability is greater than 50%
-data.test$Status_predicted_lg <- ifelse(data.test$Status_score_lg > 0.5, "1", "0")
-data.test$Status_predicted_lg <- as.factor (data.test$Status_predicted_lg)
-confusionMatrix(data=data.test$Status_predicted_lg, reference = data.test$Status)
-```
-
-When we look at the Confusion Matrix we see, that with an predicted value of 0, the reference of 0 is predicted in 673 times on point. If we predict a value of 1, in 677 times, the reference will also be 1. That means also, that with 361 values, we have an overestimation. On the other hand, in 367 values, there is an underestimation.
-
-The accuracy is about 65% which is not too accurate. This would mean that there is an error in more than 1/3 of the predictions, which is not acceptable in practice.
-
-In 95% of the cases, the mean will be between 62.87% and 67.02%.
-
-
-
-### Report the AUC values and the overall accuracy and interpret the results.
-```{r,echo=FALSE}
-# AUC value
-Status_model_auc <- performance(Status_pred, measure = "auc")
-cat("AUC: ",Status_model_auc@y.values[[1]]*100)
-
-```
-
-With our AUC of 71%, the model has a chance of 71% to separate from true positive rate and false positive rate. To take that in a practical way, this means, it is an acceptable discrimination, but has to be at least 81% to be an excellent model.
-
-
-
-## Exercise 2 with all data
-
-```{r}
-
-set.seed(8)
-data$Status = as.factor(data$Status)
-div <- createDataPartition(y = data$Status, p = 0.8, list = F)
-data.train <- data[div,] # 80% here
-PercTable(data.train$Status)
-
-data.test <- data[-div,] # rest of the 20% data goes here
-PercTable(data.test$Status)
-
-```
-
-In the next step, we train the logit model. In terms of our inputs i.e. our Xs, we use all variables included in the data_new_under apart from the status, which is our Y. 
-
-```{r, echo=FALSE}
-
-fitall <- glm(Status ~ ., data=data.train,family=binomial())
-summary(fitall)
-```
-
-We can print out only the significant variables with p-value lower than 0.05. We notice that 15 variables are found statistically significant. The one more is "tot_cur_bal" which indicates the total of all the accounts.
-
-```{r, echo=FALSE}
-significant.variables <- summary(fitall)$coeff[-1,4] < 0.05
-names(significant.variables)[significant.variables == TRUE]
-```
-
-Next, we want to test the predictive performance of our model. For this purpose, we plot the ROC curve. 
-
-```{r, echo=FALSE}
-
-
-# ROC Curve
-data.test$Status_score_lg <- predict(fitall, type='response', data.test)
-Status_pred <- prediction(data.test$Status_score_lg, data.test$Status)
-Status_roc <- performance(Status_pred, "tpr", "fpr")
-plot(Status_roc, lwd=1, colorize = TRUE, main = "Status_model: ROC Curve for logistic classifier")
-lines(x=c(0, 1), y=c(0, 1), col="black", lwd=1, lty=3)
-
-
-```
-
-In the next step, we visualize the Precision/Recall Curve. This curve summarizes the trade-off between the true positive rate and the positive predictive value for a predictive model using different probability thresholds.
-
-```{r,echo=FALSE}
-# Precision/recall curve
-fitall_precision <- performance(Status_pred, measure = "prec", x.measure = "rec")
-plot(fitall_precision, main="FitAll: Logit - Precision vs Recall")
-
-## Confusion matrix
-# Predict default if probability is greater than 50%
-data.test$Status_predicted_lg <- ifelse(data.test$Status_score_lg > 0.5, "1", "0")
-data.test$Status_predicted_lg <- as.factor (data.test$Status_predicted_lg)
-confusionMatrix(data=data.test$Status_predicted_lg, reference = data.test$Status)
-
-
-
-# AUC value
-Status_model_auc <- performance(Status_pred, measure = "auc")
-cat("AUC: ",Status_model_auc@y.values[[1]]*100)
-
-```
-
-We see a lower AUC score. We think that this comes only from the fact, that the data set is not even in the feature "Status"
-
-## Exploration
-
-#### RandomForest
-
-We like to test if a RandomForest could get a better result. 
-```{r}
-set.seed(8)
-data_new_under$Status = as.factor(data_new_under$Status)
-div <- createDataPartition(y = data_new_under$Status, p = 0.8, list = F)
-data.train <- data_new_under[div,] # 80% here
-PercTable(data.train$Status)
-
-data.test <- data_new_under[-div,] # rest of the 20% data goes here
-PercTable(data.test$Status)
-fit2 <- randomForest(Status ~ ., data = data.train, ntree=5 , mtry= 4, importance=TRUE)
-
-# Make predictions on the test data
-data.test$pred_RF <- predict(fit2, type='class', data.test)
-
-# Examine the confusion matrix
-table(data.test$pred_RF, data.test$Status)
-
-# Compute the accuracy on the test dataset
-mean(data.test$pred_RF == data.test$Status)
-
-```
-
-We see a lower mean accuracy in the RandomForest.
-
-#### Decision Tree
-Now we like to test if a Decision tree could get a better result. 
-```{r}
-
-## Train model explaining default with selected variables as inputs (i.e. Xs)
-# Specify: maximum tree depth and minimum split count
-fit3 <- rpart(Status~., data = data.train, method = "class", control = rpart.control(cp = 0, maxdepth =4))
-
-# Plot the decision tree
-rpart.plot(fit3, type=5)
-
-# Make predictions on the test data
-data.test$pred_DT <- predict(fit3, type='class', data.test)
-
-# Examine the confusion matrix
-table(data.test$pred_DT, data.test$Status)
-
-# Compute the accuracy on the test dataset
-mean(data.test$pred_DT == data.test$Status)
-
-
-```
-
-Also the Accuracy in the decison tree is lower than the linear model.
-
-
-
-## Exercise 3 
-Thinking about the pre-processing steps that you carried out before training the logistic classifier:
-
-### Can you think of a way to improve the predictive performance of your data?
-Use the Fold method, to train the model on more cases, we tried that, but didn't understand where to use the fold exactly.
-Another way to get a better result is to have more data.
-
-### What can you do differently?
-Also get the information about the age of a person, their job description with the work industry and its educational background. Furthermore, the relationship- and family-status.
-
-Age of the Person -> young people have the opportunity to get more salary in some years, older people, who are short before retirement, will then have a significant lower income, which may let them default.
-
-Job description with work industry -> If an industry has a high unemployed rate we could anticipate if someone will default or not, also we can see if a job has a bigger future than others.
-
-Educational Background -> to indicate if a person finds a job quicker in case of an possible unemployment.
-
-Relationship status-> makes the expenses of a person lower, so it has more money to use and is more financially stable.
-
-Family-status -> if someone has children and is divorced or single-parent, the income is lower and expenses are relatively higher.
-
-
-## Exercise 4
+# LARS wollen wir das hier auch machen? 
 ### What kind of challenges may a company face if it would use your model in their daily business, in particular in regard to ethical challenges and moral obligations companies have?
 
 If a company choose, to use our model, there would be a fault rate of around 30%. So it depends on the amount of loan, but there is a chance, to loose a lot of money, if it does not pay out.
