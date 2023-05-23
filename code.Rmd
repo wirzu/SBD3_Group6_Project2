@@ -97,11 +97,11 @@ That's why we check how plausible the information in the survey can be. On the o
 
 ```{r, echo=FALSE}
 # Check how many non-students have wage = 0 
-num_rows_1 <- nrow(data[data$wage == 0 & data$job_role != "Student" | data$wage == 0 & data$industry != "I am a student", ])
+num_rows_1 <- nrow(data[data$wage == 0 & !(data$job_role == "Student" | data$industry == "I am a student"), ])
 print(paste("Number of **Non** student's, with wage 0:", num_rows_1))
 
 # Check how many students have wage > 150'000
-num_rows_2 <- nrow(data[data$wage > 150000 & data$job_role == "Student" | data$wage > 150000 & data$industry != "I am a student", ])
+num_rows_2 <- nrow(data[data$wage > 150000 & (data$job_role == "Student" | data$industry == "I am a student"), ])
 print(paste("Number of student's, with wage more than 150,000:", num_rows_2))
 ```
 
