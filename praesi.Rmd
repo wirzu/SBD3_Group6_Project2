@@ -1,0 +1,61 @@
+---
+title: "Praesi"
+author: "Luca Wirths"
+date: "2023-05-23"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## Group6 - Model for Salary expectaions
+
+A funny but interesting regressiontask for SBD3
+
+By Abishan, Josua, Lars & Luca
+on 30.05.2023
+
+
+## Agenda
+
+- Dataset
+- Data exploration
+- Feature selection
+- ML's
+- Model explenation
+- Our results
+- Learnings
+- Annex
+
+## Dataset
+
+```{r , echo=FALSE}
+load("data_wage.RData")
+data_wage <- data #copy of dataset
+set.seed(8)
+overview(data)
+summary(data)
+```
+
+## Data exploration I 
+CHeck outliers
+
+## Data exploration II
+Check data findings of students 150k + etc
+
+Outliers removed
+
+## Data Exploration III
+
+
+
+## Feature selection 
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+## ANNEX

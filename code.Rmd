@@ -81,7 +81,7 @@ We now investigated the data on plausability.
 To have a better feeling and see more in detail how the feature is distributed we show here the plot_outlier, which gives us a boxplot and a histogram with and without outliers.
 
 ```{r,echo=FALSE}
-#Let's visualize all columnns with and without outliers
+#Let's visualize the wage columnns with and without outliers
 data %>%
   plot_outlier(col="aquamarine3",diagnose_outlier(data['wage']) %>%
                  filter(outliers_ratio >= 0.5) %>%          # dplyr
@@ -107,7 +107,7 @@ print(paste("Number of student's, with wage more than 150,000:", num_rows_2))
 
 We see those two possibilities to now ether delete those entries or we use an outlierhandling and give them a wage.
 
-Since we have already looked at the outlierdistribution above, we think it is better to use the outlierhandling.
+Since we have already looked at the outlier-distribution above, we think it is better to use the outlierhandling.
 So we create now the standard function to replace the outliers with the 10th and 90th percentile value of that wage feature. The default values for the outlierhandling would be 5/95% but, we have a little below 10% of data with "0$" as wage, so we had to change it to 10/90% values.
 
 ```{r,echo=FALSE}
@@ -121,7 +121,7 @@ outlier <- function(x){
 
 In the next step, we apply the outlier function. For this, we use the map_df function. This allows us to apply a function to each element of a list or atomic vector.
 
-```{r}
+```{r, echo=FALSE}
 
 #Use function outlier for the dataset
 data['wage'] <- map_df(data['wage'], outlier)
@@ -135,7 +135,7 @@ With this outlierhandling, the students now make around 3200 $ / year. Which we 
 
 Let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
 
-```{r}
+```{r, echo=FALSE}
 # Let's check our dependent variable "wage"
 summary(data$wage)
 ggplot(data, aes(x = wage)) + 
@@ -144,13 +144,22 @@ ggplot(data, aes(x = wage)) +
   theme(legend.position="none")
 ```
 
-```{r}
+```{r, echo=FALSE}
 
-data_remove <- data[!(data$wage == 0 & data$job_role != "Student" | data$wage == 0 & data$industry != "I am a student"), ]
+data_remove <- data_wage[!(data_wage$wage == 0 & data_wage$job_role != "Student" | data_wage$wage == 0 & data_wage$industry != "I am a student"), ]
 
+data_remove <- data_remove[!(data_remove$wage > 150000 & (data_remove$job_role == "Student" | data_remove$industry == "I am a student")), ]
 
+outlier1 <- function(x){
+  quantiles <- quantile(x, c(.05, .95))
+  x[x < quantiles[1]] <- quantiles[1]
+  x[x > quantiles[2]] <- quantiles[2]
+  x
+}   
 
+data_remove['wage'] <- map_df(data_remove['wage'], outlier1)
 
+data <- data_remove
 
 ```
 
@@ -207,7 +216,7 @@ The 53 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
 [24] "Programming_C.C.."
 [25] "Programming_MATLAB"
 [26] "Programming_language_used_most_often"
-[27] "ML_framework_Scikit.Learn"
+[27] "ML_framework_Scikit.Learn"powerpoint
 [28] "ML_framework_TensorFlow"
 [29] "ML_framework_Keras"
 [30] "ML_framework_Spark.MLlib"
@@ -334,6 +343,7 @@ print(lb, n = nrow(lb))
 ```
 
 We see that the best model which is not a Stacked Ensemble is a GBM model. The Gradient Boosting Machine (GBM) is a machine learning model that combines multiple weak prediction models, typically decision trees, to create a strong predictive model. It does this by iteratively fitting new models to the residuals of the previous models, effectively focusing on the mistakes made by the previous models and minimizing them in subsequent iterations. The final prediction is obtained by aggregating the predictions of all the models, with each model assigned a weight based on its performance.
+Lets have a look at the best GMB model
 
 ```{r}
 # Find the best performing model per RMSE criteria and explore it.
@@ -342,15 +352,8 @@ best_RMSE                                                    # Let's explore the
 ```
 
 
-Interesting is the RMSE, which is still 27'186 dollar which means, that every output has a deviation of +/- 27'186$ which is not that great for predicting wage. 
+Interesting is the RMSE, which is still 27'330 dollar which means, that every output has a deviation of +/- 27'330$ which is not that great for predicting wage. 
 
-```{r}
-
-# Get training timing info LARS DO WE NEED THAT? I dont think so
-trainingInfo <- automl@training_info
-trainingInfo
-
-```
 ```{r}
 # Predictions and performance on our test sample. 
 # Obtain the predictions for our test subset
@@ -391,19 +394,13 @@ print(exp_automl)
 
 ## Future Salaries
 
-### Abishan
-
-```{r}
-#LARS für was ist das hier? braucht es aus meiner sicht nicht.
-GBM_auc <- h2o.get_best_model(automl, algorithm = "GBM")
-```
-
 
 ### Abishan
 ```{r}
 Abishan <- h2o.explain_row(best_RMSE, test, row_index = 1)
-Abishan[1]
+Abishan$shap_explain_row$plots
 ```
+
 Wage is influenced by various factors. For a high wage, being in Switzerland, working in the "Other" industry, using SQL, and having a business discipline undergraduate major are important. For a low wage, being a student, uncertain ML involvement, 0-1 years of experience, and an age of 22-24 are significant.
 These factors are not surprising and are therefore plausible.
 
@@ -413,7 +410,7 @@ These factors are not surprising and are therefore plausible.
 
 ```{r}
 Josua <- h2o.explain_row(best_RMSE, test, row_index = 2)
-Josua[1]
+Josua$shap_explain_row$plotsv
 ```
 
 According to our model, important parameters for a high wage include being in Switzerland, working in the "Other" industry, using SQL programming language, and having a business discipline undergraduate major. For a low wage, being a student, not working with machine learning, having 0-1 years of experience, and writing code for 1-2 years are significant factors. 
@@ -423,7 +420,7 @@ These factors are not surprising and are therefore plausible.
 
 ```{r}
 Lars <- h2o.explain_row(best_RMSE, test, row_index = 3)
-Lars[1]
+Lars$shap_explain_row$plots
 ```
 
 For a higher wage, being in Switzerland, working in the "Other" industry, and having a business discipline undergraduate major are important. For a lower wage, being a student, not working with machine learning, having 0-1 years of experience, and falling within the age range of 25-29 are significant factors. These findings are based on the ML model, and other factors can also impact wages.
@@ -432,29 +429,14 @@ For a higher wage, being in Switzerland, working in the "Other" industry, and ha
 
 ```{r}
 Luca <- h2o.explain_row(best_RMSE, test, row_index = 4)
-Luca[1]
+Luca$shap_explain_row$plots
 ```
 
 Wage is influenced by various factors. For a higher wage, being in Switzerland, working in the "Other" job role, and having well-established involvement in machine learning at work are important. For a lower wage, being in the age range of 25-29, having 3-4 years of experience, and not being engaged in activities for building prototypes are significant. These findings are based on the ML model, and other factors can also impact wages.
 
-## Conclusion
+### Conclusion
 
 Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did not mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning three times more than before ;) 
-
-# LARS wollen wir das hier auch machen? 
-### What kind of challenges may a company face if it would use your model in their daily business, in particular in regard to ethical challenges and moral obligations companies have?
-
-If a company choose, to use our model, there would be a fault rate of around 30%. So it depends on the amount of loan, but there is a chance, to loose a lot of money, if it does not pay out.
-
-With our model, the decision, if somebody get a loan or not, would be only based on the numbers and not on the purpose. If for example somebody urgently needs money to pay an important medical surgery in order to survive the cancer, the company only will decide, if they get the money based on their income, ... In a ethical way, you have to give the money to this person, because otherwise the person who needs the money will die. This is an ethical challenge and also an moral obligations a company has with our model.
-
-To get back to our fault rate of 30% there is a chance, that in such a situation, the person who would be in charge to get the loan, would not get the loan and therefor can not pay the surgery.
-
-But there would also be the chance, that a person who use the money for their criminal businesses, would get the loan. Because our model only analyse the raw numbers and does not care about the status of the person in the civilization.
-
-### Can you think of a way how companies can overcome or at least mitigate the issues that you described above?
-
-They just should not use our model primary. They should use it as an consulting model, together with other analyzing tools. For example a background check of the customer or a personal interview with them. This way, the company can better decide, if the person needs the money and they can base their decisions on more than just one tool.
 
 ## SessionInfo
 ```{r,echo=FALSE}
