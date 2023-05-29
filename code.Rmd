@@ -177,7 +177,7 @@ ggplot(data_remove_n_outlier5, aes(x = wage)) +
   theme(legend.position="none")
 ```
 
-We see a difference in the top and bottom of the wage. But let us see in the Algo witch of the dataset is better.
+We see a difference in the top and bottom of the wage which makes sense, since we used other outliermethods. But let us see in the ML-Algo which of the dataset is better.
 
 
 ### Data selection
@@ -268,7 +268,7 @@ The 63 features are:
 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
-#create new dataframe
+#create new dataframe based on boruta output
 data_outliers10 <- data_outliers10[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,23,24,26,27,28,29,30,31,32,34,35,36,37,39,40,41,42,43,45,46,47,48,49,50,51,52,54,55,57,58,59,60,61,63,64,65,66,67,68,69,71,72,73,75,76,78)]
 
 data_remove_n_outlier5 <- data_remove_n_outlier5[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,23,24,26,27,28,29,30,31,32,34,35,36,37,39,40,41,42,43,45,46,47,48,49,50,51,52,54,55,57,58,59,60,61,63,64,65,66,67,68,69,71,72,73,75,76,78)]
@@ -283,7 +283,7 @@ print(boruta_signif)
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 
-with this output we see, that these variables have an importance. So we have our final features. We these we can build our model.
+with this output we see, that all variables have an importance. So we have our final features. We these we can build our model.
 
 ## ML part
 
