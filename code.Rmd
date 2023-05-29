@@ -34,18 +34,12 @@ library(readr)
 library(dplyr)
 library(dlookr)
 library(naniar)
-#library(UpSetR)
 library(ggplot2)
 library(tidyr)
-#library(mice)
 library(purrr)
-#library(scales)
 library(Boruta)
 library(DescTools)
-#library(caret)
-# Call other necessary libraries 
 library(data.table)
-#library(writexl)
 library(h2o)
 
 ```
@@ -207,7 +201,7 @@ print(boruta_signif)
 plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 Since it was not finished after one run, we now create a subset only with the remaining 63 features.
-The 63 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
+The 63 features are:
  [1] "gender"
  [2] "age"
  [3] "country"
@@ -279,7 +273,7 @@ data_outliers10 <- data_outliers10[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,
 
 data_remove_n_outlier5 <- data_remove_n_outlier5[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,23,24,26,27,28,29,30,31,32,34,35,36,37,39,40,41,42,43,45,46,47,48,49,50,51,52,54,55,57,58,59,60,61,63,64,65,66,67,68,69,71,72,73,75,76,78)]
 
-# run Boruta again now with all data to the selected features
+# run Boruta again with the remaining features
 boruta_output <- Boruta(wage~., data = data_outliers10, doTrace=2)
 boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
 print(boruta_signif)
@@ -297,7 +291,6 @@ with this output we see, that these variables have an importance. So we have our
 
 We use H20 AutoML to get the best ML-technique. It creates different machine learning algorithms, and compares them automatically.
 
- Installing & initializing H20. 
 ```{r H20Cluster} 
 
 # Installing & initializing H20. In case you have past installations, you should run 
@@ -343,7 +336,7 @@ test <- h2o.importFile("our_data.csv")
 
 ```
 
-# Run AutoML
+# Run AutoML for outliers10
 
 ```{r name=automl}
 automl <- h2o.automl(
@@ -403,9 +396,9 @@ print(lb, n = nrow(lb))
 ```
 
 
-We see that the rmse is better with the outliers 10%, so we use that one.
+We see that the RMSE here is 27'284$ and so worse to the outliers 10% with 21'106$, so we use the better model with lower RMSE.
 
-Lets have a look at the best of those GMB models.
+Let's have a look at the best of those GMB models.
 
 ```{r}
 # Find the best performing model per RMSE criteria and explore it.
@@ -413,9 +406,8 @@ best_RMSE <- h2o.get_best_model(automl, criterion = "RMSE", algorithm = "GBM")  
 best_RMSE                                                    # Let's explore the best perfroming model 
 ```
 
-
-Interesting is the RMSE, which is still 21'095 dollar which means, that every output has a deviation of +/- 21'095$ which is not that great for predicting wage. 
-Now we predict our salaries:
+It has 80 trees, interesting is the RMSE, which is still 21'095 dollar which means, that every output has a deviation of +/- 21'095$ which is not that great for predicting wage. 
+Now we predict our salaries(Abishan, Josua, Lars & Luca):
 
 ```{r, echo=FALSE}
 # Predictions and performance on our test sample. 
@@ -427,7 +419,7 @@ predictions
 
 
 ## Future Salaries
-
+Now we look deeper on every salary.
 
 ### Abishan
 ```{r}
@@ -436,8 +428,8 @@ Abishan$shap_explain_row$plots
 
 ```
 
-Wage is influenced by various factors. For a high wage, being in Switzerland, working in the "Other" industry, using SQL, and having a business discipline undergraduate major are important. For a low wage, being a student, uncertain ML involvement, 0-1 years of experience, and an age of 22-24 are significant.
-These factors are not surprising and are therefore plausible.
+His wage is influenced by various factors. For a high wage, being in Switzerland, having an "Other" job_role and having a business discipline undergraduate major are important. For a low wage, being a student, uncertain ML involvement, 0-1 years of experience, and an age of 22-24 are significant.
+These factors are not surprising and are therefore plausible.But the value around 23,3k is very low and with the deviation from 2'266 to 44'456 dollar still very low for switzerland. We don't think that makes sense.
 
 
 
@@ -448,8 +440,8 @@ Josua <- h2o.explain_row(best_RMSE, test, row_index = 2)
 Josua$shap_explain_row$plots
 ```
 
-According to our model, important parameters for a high wage include being in Switzerland, working in the "Other" industry, using SQL programming language, and having a business discipline undergraduate major. For a low wage, being a student, not working with machine learning, having 0-1 years of experience, and writing code for 1-2 years are significant factors. 
-These factors are not surprising and are therefore plausible.
+According to our model, important parameters for a high wage include being in Switzerland, having th "Other" job role, using SQL programming language, and having a business discipline undergraduate major. For a low wage, being a student, not working with machine learning, having 0-1 years of experience, and writing code for 1-2 years are significant factors. 
+These factors are not surprising and are therefore plausible. With the almost 38k still low for Switzerland. Deviations varying from 16'894 to 59'084 doesn't make it better.
 
 ### Lars
 
@@ -458,7 +450,7 @@ Lars <- h2o.explain_row(best_RMSE, test, row_index = 3)
 Lars$shap_explain_row$plots
 ```
 
-For a higher wage, being in Switzerland, working in the "Other" industry, and having a business discipline undergraduate major are important. For a lower wage, being a student, not working with machine learning, having 0-1 years of experience, and falling within the age range of 25-29 are significant factors. These findings are based on the ML model, and other factors can also impact wages.
+For a higher wage, being in Switzerland, having the "Other" job role, and having a business discipline undergraduate major are important. For a lower wage, being a student, not working with machine learning, having 0-1 years of experience, and falling within the age range of 25-29 are significant factors. These findings are based on the ML model, and other factors can also impact wages. also here the expected salary is very low for Switzerland. The Range with deviations is: 11'418 to 53'608 dollar
 
 ### Luca
 
@@ -467,11 +459,12 @@ Luca <- h2o.explain_row(best_RMSE, test, row_index = 4)
 Luca$shap_explain_row$plots
 ```
 
-Wage is influenced by various factors. For a higher wage, being in Switzerland, working in the "Other" job role, and having well-established involvement in machine learning at work are important. For a lower wage, being in the age range of 25-29, having 3-4 years of experience, and not being engaged in activities for building prototypes are significant. These findings are based on the ML model, and other factors can also impact wages.
+Wage is influenced by various factors. For a higher wage, being in Switzerland, working in the "Other" job role in the Shipping and Transportation industry, and having well-established involvement in machine learning at work are important. For a lower wage, being in the age range of 25-29, having 3-4 years of experience, and not being engaged in activities for building prototypes are significant. These findings are based on the ML model, and other factors can also impact wages. Here the Range and salary expecations are from our knowledge on point. Range starts from 70'305 to 112'495 dollar.
 
 ### Conclusion
 
-Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant, which is interesting for us here in Switzerland since there were only 87 entries for our country. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did not mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning more than before ;) 
+Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant, which is interesting for us here in Switzerland since there were only 87 entries for our country. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning more than before ;) 
+
 ```{r,echo=FALSE}
 print(paste("Number of observations from Switzerland: ", nrow(data[data_wage$country == "Switzerland", ])))
 ```
