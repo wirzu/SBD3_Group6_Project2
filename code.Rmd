@@ -204,88 +204,92 @@ boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
 print(boruta_signif)
 ```
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
-# plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
-Since it was not finished after one run, we now create a subset only with the remaining 53 features.
-The 53 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
- [1] "age"
- [2] "country"
- [3] "education"
- [4] "undergraduate_major"
- [5] "job_role"
- [6] "industry"
- [7] "years_experience"
- [8] "ML_atwork"
- [9] "Activities_Analyze.and.understand.data.to.influence.product.or.business.decisions"
-[10] "Activities_Build.and.or.run.a.machine.learning.service.that.operationally.improves.my.product.or.workflows"
-[11] "Activities_Build.and.or.run.the.data.infrastructure.that.my.business.uses.for.storing..analyzing..and.operationalizing.data"
-[12] "Activities_Build.prototypes.to.explore.applying.machine.learning.to.new.areas"
-[13] "Activities_Do.research.that.advances.the.state.of.the.art.of.machine.learning"
-[14] "Activities_None.of.these.activities.are.an.important.part.of.my.role.at.work"
-[15] "Notebooks_Google.Colab"
-[16] "Notebooks_Google.Cloud.Datalab"
-[17] "cloud_Amazon.Web.Services..AWS."
-[18] "cloud_Alibaba.Cloud"
-[19] "cloud_I.have.not.used.any.cloud.providers"
-[20] "Programming_Python"
-[21] "Programming_R"
-[22] "Programming_SQL"
-[23] "Programming_Java"
-[24] "Programming_C.C.."
-[25] "Programming_MATLAB"
-[26] "Programming_language_used_most_often"
-[27] "ML_framework_Scikit.Learn"powerpoint
-[28] "ML_framework_TensorFlow"
-[29] "ML_framework_Keras"
-[30] "ML_framework_Spark.MLlib"
-[31] "ML_framework_Caret"
-[32] "ML_framework_Xgboost"
-[33] "ML_framework_randomForest"
-[34] "ML_framework_None"
-[35] "Visualization_ggplot2"
-[36] "Visualization_Matplotlib"
-[37] "Visualization_Shiny"
-[38] "Visualization_Plotly"
-[39] "Visualization_None"
-[40] "percent_actively.coding"
-[41] "How.long.have.you.been.writing.code.to.analyze.data."
-[42] "For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school.."
-[43] "Do.you.consider.yourself.to.be.a.data.scientist."
-[44] "data_Categorical.Data"
-[45] "data_Image.Data"
-[46] "data_Numerical.Data"
-[47] "data_Tabular.Data"
-[48] "data_text.Data"
-[49] "data_Time.Series.Data"
-[50] "explainability.model_Examine.individual.model.coefficients"
-[51] "explainability.model_examine.feature.correlations"
-[52] "explainability.model_Examine.feature.importances"
-[53] "explainability.model_None.I.do.not.use.these.model.explanation.techniques"  
+Since it was not finished after one run, we now create a subset only with the remaining 63 features.
+The 63 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
+ [1] "gender"
+ [2] "age"
+ [3] "country"
+ [4] "education"
+ [5] "undergraduate_major"
+ [6] "job_role"
+ [7] "industry"
+ [8] "years_experience"
+ [9] "ML_atwork"
+[10] "Activities_Analyze.and.understand.data.to.influence.product.or.business.decisions"
+[11] "Activities_Build.and.or.run.a.machine.learning.service.that.operationally.improves.my.product.or.workflows"
+[12] "Activities_Build.and.or.run.the.data.infrastructure.that.my.business.uses.for.storing..analyzing..and.operationalizing.data"
+[13] "Activities_Build.prototypes.to.explore.applying.machine.learning.to.new.areas"
+[14] "Activities_Do.research.that.advances.the.state.of.the.art.of.machine.learning"
+[15] "Activities_None.of.these.activities.are.an.important.part.of.my.role.at.work"
+[16] "Notebooks_Kaggle.Kernels"
+[17] "Notebooks_Google.Colab"
+[18] "Notebooks_Google.Cloud.Datalab"
+[19] "cloud_Amazon.Web.Services..AWS."
+[20] "cloud_Microsoft.Azure"
+[21] "cloud_Alibaba.Cloud"
+[22] "cloud_I.have.not.used.any.cloud.providers"
+[23] "Programming_Python"
+[24] "Programming_R"
+[25] "Programming_SQL"
+[26] "Programming_Bash"
+[27] "Programming_Java"
+[28] "Programming_Visual.Basic.VBA"
+[29] "Programming_C.C.."
+[30] "Programming_MATLAB"
+[31] "Programming_Scala"
+[32] "Programming_SAS.STATA"
+[33] "Programming_language_used_most_often"
+[34] "ML_framework_Scikit.Learn"
+[35] "ML_framework_TensorFlow"
+[36] "ML_framework_Keras"
+[37] "ML_framework_Spark.MLlib"
+[38] "ML_framework_H20"
+[39] "ML_framework_Caret"
+[40] "ML_framework_Xgboost"
+[41] "ML_framework_randomForest"
+[42] "ML_framework_None"
+[43] "Visualization_ggplot2"
+[44] "Visualization_Matplotlib"
+[45] "Visualization_Shiny"
+[46] "Visualization_Plotly"
+[47] "percent_actively.coding"
+[48] "How.long.have.you.been.writing.code.to.analyze.data."
+[49] "For.how.many.years.have.you.used.machine.learning.methods..at.work.or.in.school.."
+[50] "Do.you.consider.yourself.to.be.a.data.scientist."
+[51] "data_Categorical.Data"
+[52] "data_Geospatial.Data"
+[53] "data_Image.Data"
+[54] "data_Numerical.Data"
+[55] "data_Sensor.Data"
+[56] "data_Tabular.Data"
+[57] "data_text.Data"
+[58] "data_Time.Series.Data"
+[59] "explainability.model_Examine.individual.model.coefficients"
+[60] "explainability.model_examine.feature.correlations"
+[61] "explainability.model_Examine.feature.importances"
+[62] "explainability.model_LIME.functions"
+[63] "explainability.model_SHAP.functions"     
 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #create new dataframe
-data_outliers10 <- data_outliers10[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
+data_outliers10 <- data_outliers10[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,23,24,26,27,28,29,30,31,32,34,35,36,37,39,40,41,42,43,45,46,47,48,49,50,51,52,54,55,57,58,59,60,61,63,64,65,66,67,68,69,71,72,73,75,76,78)]
 
-data_remove_n_outlier5 <- data_remove_n_outlier5[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
+data_remove_n_outlier5 <- data_remove_n_outlier5[,c(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,19,23,24,26,27,28,29,30,31,32,34,35,36,37,39,40,41,42,43,45,46,47,48,49,50,51,52,54,55,57,58,59,60,61,63,64,65,66,67,68,69,71,72,73,75,76,78)]
 
 # run Boruta again now with all data to the selected features
-# boruta_output <- Boruta(wage~., data = new_data, doTrace=2)
-# boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-# print(boruta_signif)
+boruta_output <- Boruta(wage~., data = data_outliers10, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
 
 ```
 ```{r}
-# plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
+plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
 ```
 
-with this output we see, that the variable Google Colab is not that important so we remove it. 
-
-```{r}
-new_data <- new_data %>% select(-Notebooks_Google.Colab)
-```
-
-With that we we have no our final features. We these we can build our model.
+with this output we see, that these variables have an importance. So we have our final features. We these we can build our model.
 
 ## ML part
 
@@ -401,7 +405,7 @@ print(lb, n = nrow(lb))
 
 We see that the rmse is better with the outliers 10%, so we use that one.
 
-Lets have a look at the best of those GMB model
+Lets have a look at the best of those GMB models.
 
 ```{r}
 # Find the best performing model per RMSE criteria and explore it.
@@ -410,9 +414,10 @@ best_RMSE                                                    # Let's explore the
 ```
 
 
-Interesting is the RMSE, which is still 27'330 dollar which means, that every output has a deviation of +/- 27'330$ which is not that great for predicting wage. 
+Interesting is the RMSE, which is still 21'095 dollar which means, that every output has a deviation of +/- 21'095$ which is not that great for predicting wage. 
+Now we predict our salaries:
 
-```{r}
+```{r, echo=FALSE}
 # Predictions and performance on our test sample. 
 # Obtain the predictions for our test subset
 pred_best_RMSE <- h2o.predict(best_RMSE, test)
@@ -428,6 +433,7 @@ predictions
 ```{r}
 Abishan <- h2o.explain_row(best_RMSE, test, row_index = 1)
 Abishan$shap_explain_row$plots
+
 ```
 
 Wage is influenced by various factors. For a high wage, being in Switzerland, working in the "Other" industry, using SQL, and having a business discipline undergraduate major are important. For a low wage, being a student, uncertain ML involvement, 0-1 years of experience, and an age of 22-24 are significant.
@@ -439,7 +445,7 @@ These factors are not surprising and are therefore plausible.
 
 ```{r}
 Josua <- h2o.explain_row(best_RMSE, test, row_index = 2)
-Josua$shap_explain_row$plotsv
+Josua$shap_explain_row$plots
 ```
 
 According to our model, important parameters for a high wage include being in Switzerland, working in the "Other" industry, using SQL programming language, and having a business discipline undergraduate major. For a low wage, being a student, not working with machine learning, having 0-1 years of experience, and writing code for 1-2 years are significant factors. 
@@ -465,8 +471,10 @@ Wage is influenced by various factors. For a higher wage, being in Switzerland, 
 
 ### Conclusion
 
-Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did not mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning three times more than before ;) 
-
+Across all four trials, there are clear indications of factors that are relevant to wages. Country is a very strong determinant, which is interesting for us here in Switzerland since there were only 87 entries for our country. Additionally, being a student is an important factor. We can also observe the biggest difference in our statements since Luca was the only one who did not mention being in the industry, instead stating "I am a student." As a result, Luca earns three times as much as the rest of us. Age is also a relevant factor; based on our information (everyone under 30 years of age), it has a negative impact on wages. The job role assigned as "Other" is the only strong factor that is not clearly understandable. Nevertheless, we are fundamentally very satisfied with our model, as the factors it considers are plausible and comprehensible. We will be happy once we can settle as students and immediately start earning more than before ;) 
+```{r,echo=FALSE}
+print(paste("Number of observations from Switzerland: ", nrow(data[data_wage$country == "Switzerland", ])))
+```
 ## SessionInfo
 ```{r,echo=FALSE}
 sessionInfo()

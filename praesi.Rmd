@@ -37,12 +37,6 @@ overview(data)
 summary(data)
 ```
 
-## Dataset Switzerland
-```{r}
-nrow(data_wage$country == "Switzerland"]
-
-```
-
 
 
 ## Data exploration I 
@@ -116,13 +110,13 @@ ggplot(data_remove_n_outlier5, aes(x = wage)) +
 ```
 
 ## Feature selection I
-
-Boruta output 1:
-
+```{r, echo=FALSE}
+knitr::include_graphics("Boruta.png")
+```
 ## Feature selection II
-
-Boruta output 2:
-
+```{r,echo=FALSE}
+knitr::include_graphics("Boruta1.png")
+```
 
 ## ML's I
 
@@ -143,26 +137,22 @@ print(lb, n = nrow(lb))
 
 ## Abishans' result
 ```{r}
-Abishan <- h2o.explain_row(best_RMSE, test, row_index = 1)
-Abishan$shap_explain_row$plots
+knitr::include_graphics("Abi.png")
 ```
 
 ## Josua's result
 ```{r}
-Josua <- h2o.explain_row(best_RMSE, test, row_index = 2)
-Josua$shap_explain_row$plotsv
+knitr::include_graphics("Josua.png")
 ```
 
 ## Lars' result
 ```{r}
-Lars <- h2o.explain_row(best_RMSE, test, row_index = 3)
-Lars$shap_explain_row$plots
+knitr::include_graphics("Lars.png")
 ```
 
 ## Luca's result
 ```{r}
-Luca <- h2o.explain_row(best_RMSE, test, row_index = 4)
-Luca$shap_explain_row$plots
+knitr::include_graphics("Luca.png")
 ```
 
 ## Learnings 
@@ -171,5 +161,13 @@ Luca$shap_explain_row$plots
 - H2O Auto ML is a nice tool, which helps a lot.
 - Dataentries questionable (think of the permutations of the teachers)
 - The answers of a survey ar not that reliable, people could lie easily. ex. Luca did not feel as a student but everyone else did (they also work parttime)
+- Switzerland has only 87 entries
 
 ## ANNEX
+
+## Dataset Switzerland
+```{r}
+nrow(data[data_wage$country == "Switzerland", ])
+
+```
+
