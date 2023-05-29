@@ -107,6 +107,8 @@ print(paste("Number of student's, with wage more than 150,000:", num_rows_2))
 
 We see those two possibilities to now ether delete those entries or we use an outlierhandling and give them a wage.
 
+### 10% outliers
+
 Since we have already looked at the outlier-distribution above, we think it is better to use the outlierhandling.
 So we create now the standard function to replace the outliers with the 10th and 90th percentile value of that wage feature. The default values for the outlierhandling would be 5/95% but, we have a little below 10% of data with "0$" as wage, so we had to change it to 10/90% values.
 
@@ -125,46 +127,63 @@ In the next step, we apply the outlier function. For this, we use the map_df fun
 
 #Use function outlier for the dataset
 data['wage'] <- map_df(data['wage'], outlier)
+
+#Save to later use on 
+data_outliers10 <- data
 ```
+
+Let's look at the distribution of the wage now:
+
+```{r, echo=FALSE}
+# Let's check our dependent variable "wage"
+ggplot(data_outliers10, aes(x = wage)) + 
+  geom_histogram(fill="aquamarine3", color = "black") +
+  labs(title = "Histogram of the wages for option 1") +
+  theme(legend.position="none")
+```
+
 
 With this outlierhandling, the students now make around 3200 $ / year. Which we think is a plausible value.
 
 
 
-### Target feature wage
+### Remove unlogical entries and 5% outliers
 
-Let us check the target feature. It does not really make sense, if you think why are there people with that low of an income. But with all the different costs of living it makes sense.
-
-```{r, echo=FALSE}
-# Let's check our dependent variable "wage"
-summary(data$wage)
-ggplot(data, aes(x = wage)) + 
-  geom_histogram(fill="aquamarine3", color = "black") +
-  labs(title = "Histogram of the wages") +
-  theme(legend.position="none")
-```
+Here the second mentioned variant for the data, where we remove the unlogical students with high income and non students with the income of 0$.
 
 ```{r, echo=FALSE}
-
+#remove non students with 0 income
 data_remove <- data_wage[!(data_wage$wage == 0 & data_wage$job_role != "Student" | data_wage$wage == 0 & data_wage$industry != "I am a student"), ]
 
+#remove students with income > 150k
 data_remove <- data_remove[!(data_remove$wage > 150000 & (data_remove$job_role == "Student" | data_remove$industry == "I am a student")), ]
 
+#create new outlierfunction 5/95%
 outlier1 <- function(x){
   quantiles <- quantile(x, c(.05, .95))
   x[x < quantiles[1]] <- quantiles[1]
   x[x > quantiles[2]] <- quantiles[2]
   x
 }   
-
+#use outlierfunction
 data_remove['wage'] <- map_df(data_remove['wage'], outlier1)
 
-data <- data_remove
+data_remove_n_outlier5 <- data_remove
 
 ```
 
 
+Let's look at the distribution of the wage now:
 
+```{r, echo=FALSE}
+# Let's check our dependent variable "wage"
+ggplot(data_remove_n_outlier5, aes(x = wage)) + 
+  geom_histogram(fill="aquamarine3", color = "black") +
+  labs(title = "Histogram of the wages for option 2") +
+  theme(legend.position="none")
+```
+
+We see a difference in the top and bottom of the wage. But let us see in the Algo witch of the dataset is better.
 
 
 ### Data selection
@@ -175,15 +194,14 @@ So help us select the right features, we use the boruta algorithm.
 
 
 
-#### TEST features
+#### Boruta
 Here we see the first Boruta results. 
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
-test_data <- data
-str(test_data)
-# boruta_output <- Boruta(wage~., data = test_data, doTrace=2)
-# boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
-# print(boruta_signif)
+test_data <- data_outliers10
+boruta_output <- Boruta(wage~., data = test_data, doTrace=2)
+boruta_signif <- getSelectedAttributes(boruta_output, withTentative = TRUE)
+print(boruta_signif)
 ```
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 # plot(boruta_output, cex.axis=.7, las=2, xlab="", main="Variable Importance") 
@@ -247,7 +265,9 @@ The 53 features are: (Evtl am ende löschen da die Anzeige oben ist.. )
 
 ```{r, echo=FALSE,message=FALSE,warning=FALSE}
 #create new dataframe
-new_data <- data[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
+data_outliers10 <- data_outliers10[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
+
+data_remove_n_outlier5 <- data_remove_n_outlier5[,c(2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,19,23,26,27,28,29,30,32,35,36,40,41,42,43,45,47,48,49,50,51,52,54,55,56,57,58,59,60,61,64,65,67,68,69,71,72,73,77,78)]
 
 # run Boruta again now with all data to the selected features
 # boruta_output <- Boruta(wage~., data = new_data, doTrace=2)
@@ -286,12 +306,6 @@ for (pkg in pkgs) {
 }
 #install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R")))
 
-library(h2o)
-
-
-
-
-
 # Initialize H2O cluster
 h2o.init()
 
@@ -302,17 +316,17 @@ dep_var <- "wage"
 
 # Identify the categorical variables in the dataset
 cat_cols <- c()
-for (col in names(new_data)) {
-  if (class(new_data[[col]]) == "factor" | typeof(new_data[[col]]) == "character") {
+for (col in names(data_outliers10)) {
+  if (class(data_outliers10[[col]]) == "factor" | typeof(data_outliers10[[col]]) == "character") {
     cat_cols <- c(cat_cols, col)
   }
 }
 
 # Convert the categorical variables to factors
-new_data[cat_cols] <- lapply(new_data[cat_cols], factor)
+data_outliers10[cat_cols] <- lapply(data_outliers10[cat_cols], factor)
 
 
-df <- as.h2o(new_data)
+df <- as.h2o(data_outliers10)
 
 
 # Split dataset into training and test sets
@@ -343,7 +357,51 @@ print(lb, n = nrow(lb))
 ```
 
 We see that the best model which is not a Stacked Ensemble is a GBM model. The Gradient Boosting Machine (GBM) is a machine learning model that combines multiple weak prediction models, typically decision trees, to create a strong predictive model. It does this by iteratively fitting new models to the residuals of the previous models, effectively focusing on the mistakes made by the previous models and minimizing them in subsequent iterations. The final prediction is obtained by aggregating the predictions of all the models, with each model assigned a weight based on its performance.
-Lets have a look at the best GMB model
+
+Now let us see the results for the other dataset:
+```{r}
+
+
+# Identify the categorical variables in the dataset
+cat_cols <- c()
+for (col in names(data_remove_n_outlier5)) {
+  if (class(data_remove_n_outlier5[[col]]) == "factor" | typeof(data_remove_n_outlier5[[col]]) == "character") {
+    cat_cols <- c(cat_cols, col)
+  }
+}
+
+# Convert the categorical variables to factors
+data_remove_n_outlier5[cat_cols] <- lapply(data_remove_n_outlier5[cat_cols], factor)
+
+
+df <- as.h2o(data_remove_n_outlier5)
+
+
+# Split dataset into training and test sets
+set.seed(8)
+splits <- h2o.splitFrame(df, ratios = c(0.8))
+train <- splits[[1]]
+test <- h2o.importFile("our_data.csv")
+
+
+automl1 <- h2o.automl(
+  x = setdiff(colnames(df), dep_var), # independent variables
+  y = dep_var, # dependent variable
+  training_frame = train,
+  max_runtime_secs = 600, # maximum time in seconds for AutoML to run
+  seed = 12 # set seed for reproducibility
+)
+
+
+  # View leaderboard of models generated by AutoML
+lb <- automl1@leaderboard
+print(lb, n = nrow(lb)) 
+```
+
+
+We see that the rmse is better with the outliers 10%, so we use that one.
+
+Lets have a look at the best of those GMB model
 
 ```{r}
 # Find the best performing model per RMSE criteria and explore it.
@@ -358,39 +416,10 @@ Interesting is the RMSE, which is still 27'330 dollar which means, that every ou
 # Predictions and performance on our test sample. 
 # Obtain the predictions for our test subset
 pred_best_RMSE <- h2o.predict(best_RMSE, test)
-```
-```{r}
 predictions <- as.data.table(pred_best_RMSE)
 predictions
 ```
 
-
-```{r}
-
-## Explanation
-# Global explanations -- explains the hole model
-
-# Explain leader model & compare with all AutoML models
-exp_automl <- h2o.explain(best_RMSE, test) 
-print(exp_automl) 
-
-# Some explainations concerning the plots: 
-# The green lines or dots on the PDP show the average response versus feature value with error bars.  
-# The grey histogram shows the number of instances for each range of feature values. 
-# For the monthly income plot plot, we can see that the average leaving rate decreases
-# with the montly income, but also that the data becomes increasingly sparse for larger interest rates.
-
-
-# Local explanations -- Explain a specific unit (i.e. obtain explanations for 
-# a single person in the sample). 
-
-# In the following step, we explain the behavior of a model or group of models 
-# with respect to a single row of data. By using the h2o.explain_row() function, 
-# the outputs would be: 
-#  * SHAP Contribution Plot (for the top tree-based model in AutoML)
-#  * Individual Conditional Expectation (ICE) Plots
-
-```
 
 ## Future Salaries
 
